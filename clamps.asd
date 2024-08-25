@@ -2,8 +2,10 @@
 
 (in-package :cl-user)
 
-(pushnew (merge-pathnames "local-projects/clamps/packages/svg-import-export/" ql:*quicklisp-home*)
-      asdf:*central-registry*)
+(when (find-package '#:QUICKLISP)
+  (pushnew (merge-pathnames "local-projects/clamps/packages/svg-import-export/"
+			    (eval (find-symbol "*QUICKLISP-HOME*" '#:QUICKLISP)))
+	   asdf:*central-registry*))
 
 (asdf:defsystem #:clamps
   :description "Common Lisp Aided Music Production System"
