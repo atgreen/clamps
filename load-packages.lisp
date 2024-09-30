@@ -37,17 +37,15 @@
                   :cl-sfz
                   :cl-poolplayer
                   :svg-import-export
-                  :cm-svg
-                  :cm-svg.rts
                   :cm-sfz
                   :cm-poolevt
                   :cm-poolplayer
                   :cm-fomus
                   :cm-incudine
+                  :cl-midictl
                   :cm-utils
                   :clog-dsp-widgets
                   :clog-cuda
-                  :cl-midictl
                   :clog-midi-controller
                   :cm-all
                   ))

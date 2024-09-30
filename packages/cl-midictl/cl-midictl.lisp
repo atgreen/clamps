@@ -126,6 +126,109 @@
   (let ((status (+ chan (ash #b1011 4))))
     (midi-out stream status ccno ccval)))
 
+(defun add-midi-cc-fn (fn channel ccnum)
+  "Add /fn/ to <<*midi-cc-fns*>> for /channel/ and /ccnum/.
+/fn/ will be called with the controller value as argument when MIDI
+input at /channel/ and /ccnum/ is received.
+
+@Arguments
+fn - Function of one Argument to call on MIDI input
+channel - Integer in the range [1..16] denoting the MIDI channel.
+ccnum - Integer in the range [1..128] denoting the MIDI Controller number.
+
+@Example
+(add-midi-cc-fn
+  (lambda (cc-val) (format t \"Received Controller Value ~a~%\" cc-val))
+  1 1)
+;; => (#<function (lambda (cc-val)) {564DA61B}>)
+
+@See-also
+*midi-cc-fns*
+remove-all-channel-midi-cc-fns
+remove-all-midi-cc-fns
+remove-midi-cc-fns
+show-midi-cc-fns
+"
+  (push fn (aref (aref *midi-cc-fns* (1- channel)) (1- ccnum))))
+
+(defun show-midi-cc-fns (channel ccnum)
+  "Show all functions stored in *midi-cc-fns* for /channel/ and /ccnum/.
+
+@Arguments
+channel - Integer in the range [1..16] denoting the MIDI channel.
+ccnum - Integer in the range [1..128] denoting the MIDI Controller number.
+
+@Example
+(show-midi-cc-fns 1 1) ; => nil
+
+;; Output in the REPL:
+;; cc-fns of channel 1, ccnum 1: (#<function (lambda (ccval)) {564E441B}>)
+
+@See-also
+add-midi-cc-fn
+*midi-cc-fns*
+remove-midi-cc-fns
+remove-all-channel-midi-cc-fns
+remove-all-midi-cc-fns
+"
+  (format t "cc-fns of channel ~a, ccnum ~a: ~a~%" channel ccnum
+        (aref (aref *midi-cc-fns* (1- channel)) (1- ccnum))))
+
+(defun remove-midi-cc-fns (channel ccnum)
+  "Remove all functions from *midi-cc-fns* for /channel/ and /ccnum/.
+
+@Arguments
+channel - Integer in the range [1..16] denoting the MIDI channel.
+ccnum - Integer in the range [1..128] denoting the MIDI Controller number.
+
+@Example
+(remove-midi-cc-fns 1 1) ; => nil
+
+@See-also
+add-midi-cc-fn
+*midi-cc-fns*
+remove-all-channel-midi-cc-fns
+remove-all-midi-cc-fns
+show-midi-cc-fns
+"
+  (setf (aref (aref *midi-cc-fns* (1- channel)) (1- ccnum)) nil))
+
+(defun remove-all-channel-midi-cc-fns (channel)
+  "Remove all functions from *midi-cc-fns* for all ccnums of /channel/. 
+
+@Arguments
+channel - Integer in the range [1..16] denoting the MIDI channel.
+
+@Example
+(remove-all-channel-midi-cc-fns 1) ; => nil
+
+@See-also
+add-midi-cc-fn
+*midi-cc-fns*
+remove-midi-cc-fns
+remove-all-midi-cc-fns
+show-midi-cc-fns
+"
+  (dotimes (ccnum 128)
+    (remove-midi-cc-fns (1- channel) (1+ ccnum))))
+
+(defun remove-all-midi-cc-fns ()
+  "Remove all functions from *midi-cc-fns* for all ccnums and channels.
+
+@Example
+(remove-all-midi-cc-fns) ; => nil
+
+@See-also
+add-midi-cc-fn
+*midi-cc-fns*
+remove-midi-cc-fns
+remove-all-channel-midi-cc-fns
+show-midi-cc-fns
+"
+  (dotimes (channel 16)
+    (dotimes (ccnum 128)
+      (remove-midi-cc-fns (1+ channel) (1+ ccnum)))))
+
 (defparameter *midi-controllers* (make-hash-table :test #'equal)
   "hash-table which stores all currently active midi controllers by id
   and an entry for all used midi-ins of the active controllers by
@@ -137,20 +240,40 @@
 
 (defclass midi-controller ()
   ((id :initform nil :initarg :id :accessor id)
-   (gui-update-off :initform nil :accessor gui-update-off)
-   (gui :initform nil :accessor gui)
-   (chan :initform 0 :initarg :chan :accessor chan)
+;;;   (gui-update-off :initform nil :accessor gui-update-off)
+;;;   (gui :initform nil :accessor mc-gui)
+   (chan :initform nil :initarg :chan :accessor chan :type (or null (integer 1 16))
+         :documentation
+         "Accessor method for the chan slot of an instance of type
+<<midi-controller>>.")
    (cc-map :initform (make-array 128 :initial-contents (loop for i below 128 collect i))
-           :initarg :cc-map :accessor cc-map)
-   (midi-input :initform nil :initarg :midi-input :accessor midi-input)
-   (midi-output :initform nil :initarg :midi-output :accessor midi-output)
+           :initarg :cc-map :accessor cc-map
+           :documentation
+         "Accessor method for the cc-map slot of an instance of type
+<<midi-controller>>.")
+   (midi-input :initform nil :initarg :midi-input :accessor midi-input
+               :documentation
+               "Accessor method for the midi-input slot of an instance of type
+<<midi-controller>>.")
+   (midi-output :initform nil :initarg :midi-output :accessor midi-output
+                :documentation
+                "Accessor method for the midi-output slot of an instance of type
+<<midi-controller>>.")
    (echo :initarg :echo :initform t :accessor echo
-         :documentation "en/disable direct updates in hw-controller when midi-input is received. (default: t)")
-   (last-note-on :initform 0 :initarg :last-note-on :accessor last-note-on)
+         :documentation "Accessor method for the echo slot of an instance of type
+<<midi-controller>>. En/disable direct updates in hw-controller when
+midi-input is received. (default: t)")
+   (last-note-on :initform 0 :initarg :last-note-on :accessor last-note-on
+                 :documentation
+                 "Accessor method for the last-note-on slot of an instance of type <<midi-controller>>.")
    (cc-state :initform (make-array 128 :initial-contents (loop for i below 128 collect (make-ref 0)))
-             :initarg :cc-state :accessor cc-state)
+             :initarg :cc-state :accessor cc-state
+             :documentation
+                 "Accessor method for the cc-state slot of an instance of type <<midi-controller>>.")
    (note-state :initform (make-array 128 :initial-contents (loop for i below 128 collect (make-ref 0)))
-             :initarg :note-state :accessor note-state)
+               :initarg :note-state :accessor note-state
+               :documentation
+                 "Accessor method for the note-state slot of an instance of type <<midi-controller>>.")
    ;;; storage of functions to call for individual cc events. An entry
    ;;; of the array is a list of functions accepting one arg: the
    ;;; controller value.
@@ -161,11 +284,52 @@
    ;;; and velo.
    (note-fns :initform nil :initarg :note-fns :accessor note-fns)
    (unwatch :initform nil :initarg :unwatch :accessor unwatch))
-  (:documentation "generic class for midi-controllers. An instance
-  should get initialized with #'add-midi-controller and get removed
-  with #'remove-midi-controller, using its id as argument in order to
-  close the gui and remove its handler functions from
-  *midi-controllers*."))
+  (:documentation "Generic base class for midi controllers in the /cl-midictl/
+package. An instance of a class derived from /midi-controller/ should
+get initialized with <<add-midi-controller>> and removed with
+<<remove-midi-controller>> in order to add/remove it to/from the midi
+controller registry.
+
+midi-controller implements the following slots with initargs
+being the keywords of the slot symbol:
+
+=cc-map= -- Array mapping CC nums to internal indexes of the instance.
+
+=cc-fns= -- Array of 128 lists storing functions to call when
+receiving a value at any of the 128 CC numbers.
+
+=cc-state= -- Array of 128 <<ref-object><ref-objects>> storing the last
+received CC value for each CC number.
+
+=chan= -- Integer in the range [1..16] denoting the MIDI channel.
+
+=echo= -- Boolean to en/disable echoing of midi input to midi output.
+
+=id= -- Keyword or Symbol to identify the controller in the registry.
+
+=last-note-on= -- The keynum of the last received note-on event with positive
+velocity.
+
+=midi-input= -- jackmidi:input-stream for MIDI input.
+
+=midi-output= -- jackmidi:output-stream for MIDI output.
+
+=note-fns= -- Array of 128 lists storing functions to call with the
+velocity as argument, mapped to a received note-on event on any of the
+128 keynumbers.
+
+=note-state= -- Array of 128 <<ref-object><ref-objects>> storing the last
+received velocity for each keynum.
+
+=unwatch= -- Storage for unwatch functions for the slots of the
+controller instance, handled internally.
+
+@See-also
+add-midi-controller
+find-controller
+remove-midi-controller
+remove-all-midi-controllers
+"))
 
 (defgeneric (setf midi-input) (new-midi-in instance)
   (:method (new-midi-in (instance midi-controller))
@@ -176,7 +340,8 @@
     (setf (slot-value instance 'midi-in) new-midi-in)
     (push instance (gethash new-midi-in *midi-controllers*)))
   (:documentation
-   "set the midi-input slot of instance to new-midi-in and update *midi-controllers*"))
+   "Set the midi-input slot of /instance/ to /new-midi-in/ and update
+*midi-controllers*."))
 
 (defgeneric handle-midi-in (instance opcode d1 d2)
   (:documentation
@@ -209,65 +374,119 @@ controller actions."))
     (dotimes (cc-num 128)
       (osc-midi-write-short
        midi-output
-       (+ chan 176) cc-num (get-val (aref (aref *midi-cc-state* chan) cc-num))))))
+       (+ (1- chan) 176) cc-num (get-val (aref (aref *midi-cc-state* chan) cc-num))))))
+
+(defun ensure-defaultmidi-out (midi-out)
+  (or midi-out *midi-out1*))
 
 (defmethod initialize-instance :after ((instance midi-controller) &rest args)
   (declare (ignorable args))
-  (with-slots (id midi-input midi-output) instance
+  (with-slots (id midi-input midi-output chan) instance
 ;;    (format t "~&midictl-id: ~a ~%" id)
     (if (gethash id *midi-controllers*)
         (warn "id already used: ~a" id)
         (progn
-          (format t "adding controller ~S~%" id)
-          (unless midi-input (error "no midi-input specified for ~a" instance))
-          (unless midi-output (error "no midi-output specified for ~a" instance))
-;;;          (setf midi-output (cm:ensure-jackmidi midi-output))
+          (unless chan (setf chan *global-midi-channel*))
+          (setf midi-input (or midi-input *midi-in1*))
+          (format t "adding midi controller ~S~%" id)
+          (setf midi-output (ensure-default-midi-out midi-output))
           (push instance (gethash midi-input *midi-controllers*))
           (setf (gethash id *midi-controllers*) instance)))))
 
 ;;; central registry for midi controllers:
 
-(defun add-midi-controller (class &rest args)
-  "register midi-controller by id and additionally by pushing it onto
-the hash-table entry of its midi-input."
-  (apply #'make-instance class args))
+(defun add-midi-controller (class id &rest args)
+  "Register a MIDI controller of class /class/ with ID /id/ and optional
+initialization argumens /args/.
+
+@Arguments
+class - The class of the midi controller to add.
+id - Keyword or Symbol used as ID of the instance.
+args - Initialization arguments appropriate for the class.
+
+@See-also
+list-midi-controllers
+find-controller
+midi-controller
+remove-midi-controller
+remove-all-midi-controllers
+"
+  (if (find-controller id)
+      (error "midi-controller ~S already defined!" id)
+      (apply #'make-instance class :id id args)))
 
 (defun remove-midi-controller (id)
-  (let ((instance (gethash id *midi-controllers*)))
-    (format t "~&removing: ~a~%" id)
+  "Unregister and delete the instance of a midi controller with ID /id/.
+
+@Arguments
+id - Keyword or Symbol used as ID of the instance.    
+
+@See-also
+add-midi-controller
+list-midi-controllers
+find-controller
+midi-controller
+remove-all-midi-controllers
+
+"  (let ((instance (gethash id *midi-controllers*)))
     (if instance
         (progn
-          (mapcar #'funcall (unwatch instance))
+          (mapc #'funcall (unwatch instance))
           (if (member instance (gethash (midi-input instance) *midi-controllers*))
               (progn
                 (setf (gethash (midi-input instance) *midi-controllers*)
                       (delete instance (gethash (midi-input instance) *midi-controllers*)))
-                (format t "removing ~S: ~a" id (remhash id *midi-controllers*)))
+                (format t "removing midi controller ~S (~a)~%" id (remhash id *midi-controllers*)))
               (warn "couldn't remove midi-controller ~a" instance))))))
 
 (defun remove-all-midi-controllers ()
-  (loop
-    for key being the hash-keys of *midi-controllers*
-    for v being the hash-values of *midi-controllers*
-    do
-       (unless (consp v)
-         (format t "~&removing: ~a~%" v)
-         (if v
-             (if (member v (gethash (midi-input v) *midi-controllers*))
-                 (progn
-                   (setf (gethash (midi-input v) *midi-controllers*)
-                         (delete v (gethash (midi-input v) *midi-controllers*)))
-                   (format t "removing ~a: ~a" key (remhash key *midi-controllers*)))
-                     (warn "couldn't remove midi-controller ~a" v))))))
+  "Unregister and delete all currently registered MIDI controller instances.
+
+@See-also
+add-midi-controller
+list-midi-controllers
+find-controller
+midi-controller
+remove-midi-controller
+"
+  (mapc #'remove-midi-controller (list-midi-controllers))
+  nil)
 
 (defun find-controller (id)
-  (gethash id *midi-controllers*))
+  "Return MIDI controller instance with ID /id/ or /nil/ if not
+registered.
 
-(defun ensure-controller (id)
-  (let ((controller (gethash id *midi-controllers*)))
-    (if controller
-        controller
-        (error "controller ~S not found!" id))))
+@Arguments
+id - Keyword or Symbol used as ID of a midicontroller instance .
+
+@See-also
+add-midi-controller
+list-midi-controllers
+midi-controller
+remove-midi-controller
+remove-all-midi-controllers
+
+"  (let ((controller (gethash id *midi-controllers*)))
+     (if controller
+         controller)))
+
+(defun list-midi-controllers ()
+  "Return the IDs of all registered midi controllers in a list.
+
+@See-also
+add-midi-controller
+find-controller
+midi-controller
+remove-midi-controller
+remove-all-midi-controllers
+
+"  (let (acc)
+     (maphash (lambda (key value)
+                (declare (ignore value))
+                (if (member (type-of key) '(symbol keyword))
+                    (push key acc)))
+              *midi-controllers*)
+     (sort acc #'string< :key #'symbol-name)))
 
 ;;; (ensure-controller :nk2)
 ;;; (setf *midi-debug* nil)
@@ -306,21 +525,26 @@ instance."
      (dolist (fn (aref (aref *midi-note-fns* channel) d1)) (funcall fn 0)))))
 
 (defun start-midi-receive (input)
-  "general receiver/dispatcher for all midi input of input arg. On any
-midi input it scans all elems of *midi-controllers* and calls their
-handle-midi-in method in case the event's midi channel matches the
-controller's channel."
+  "Start the clamps generic midi handler and all registered MIDI responders
+of input stream /input/.
+
+@Arguments
+input - Input MIDI stream of type /<jackmidi:input-stream>/.
+
+@See-also
+stop-midi-receive
+"
   (incudine.util:msg :info "removing-responders")
   (remove-all-responders input)
   (make-responder input
-     (lambda (st d1 d2)
-       (let ((chan (status->channel st))
-             (opcode (status->opcode st)))
-         (generic-midi-handler opcode d1 d2 chan)
-         (dolist (controller (gethash input *midi-controllers*))
-           (declare (type midi-controller controller))
-           (if (= chan (chan controller))
-               (handle-midi-in controller opcode d1 d2))))))
+                  (lambda (st d1 d2)
+                    (let ((chan (status->channel st))
+                          (opcode (status->opcode st)))
+                      (generic-midi-handler opcode d1 d2 chan)
+                      (dolist (controller (gethash input *midi-controllers*))
+                        (declare (type midi-controller controller))
+                        (if (= chan (1- (chan controller)))
+                            (handle-midi-in controller opcode d1 d2))))))
   (recv-start input)
   (update-all-controllers input)
   :midi-rcv-started)
@@ -328,8 +552,15 @@ controller's channel."
 ;;; (start-midi-receive *midi-in1*)
 
 (defun stop-midi-receive (input)
-  "remove all responders of input and stop general receiver/dispatcher
-of the input."
+  "Stop the clamps generic midi handler and remove all registered MIDI
+responders of input stream /input/.
+
+@Arguments
+input - Input MIDI stream of type /<jackmidi:input-stream>/.
+
+@See-also
+start-midi-receive
+"
   (remove-all-responders input)
   (recv-stop input))
 

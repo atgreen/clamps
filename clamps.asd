@@ -20,42 +20,9 @@
                #:cm
                #:fomus
                #:ats-cuda)
-  :components ((:file "load-packages")
+  :components ((:file "init")
+               (:file "load-packages")
                (:file "package")
                (:file "clamps-utils")
                (:file "clamps")
                ))
-
-
-(defparameter *sfz-preset-path* (list (pathname "~/work/snd/sfz/")))
-(defparameter *sfile-path* (list (pathname "~/work/snd/")))
-(defparameter *sfz-preset-lookup* (make-hash-table))
-
-(defun clamps (&rest args)
-  (flet ((clampscall (fn &rest args)
-           (apply (find-symbol (string fn) :clamps) args))
-         (cmvar (var)
-           (symbol-value (find-symbol (string var) :cm))))
-    (setf *package* (find-package :clamps))
-    (setf *readtable* (cmvar :*cm-readtable*))
-    ;; add slime readtable mapping...
-    (let ((swank-pkg (find-package :swank))
-          (slynk-pkg (find-package :slynk)))
-      (when swank-pkg
-        (let ((sym (intern (symbol-name :*readtable-alist*) swank-pkg)))
-          (setf (symbol-value sym)
-                (cons (cons (symbol-name :cm)
-                            (cmvar :*cm-readtable*))
-                      (symbol-value sym))))
-        (when slynk-pkg
-          (let ((sym (intern (symbol-name :*readtable-alist*) slynk-pkg)))
-            (setf (symbol-value sym)
-                  (cons (cons (symbol-name :cm)
-                              (cmvar :*cm-readtable*))
-                        (symbol-value sym)))))))
-    (apply #'clampscall :clamps-start args)))
-
-(defun clamps-no-gui ()
-  (clamps :open-gui nil))
-
-(export '(*sfz-preset-lookup* *sfz-preset-path* *sfile-path* clamps clamps-no-gui) 'cl-user)

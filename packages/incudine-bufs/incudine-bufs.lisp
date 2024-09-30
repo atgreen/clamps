@@ -22,26 +22,30 @@
 
 (in-package :incudine-bufs)
 
-(defparameter *buffers* (make-hash-table))
+(defparameter *buffers* (make-hash-table :test #'equal))
 (defparameter *buffer-ids* (make-hash-table :test #'equal))
 (defparameter *buffer-max-id* -1)
 (defparameter *buffer-next-id* '())
 
 ;;; 
-
+#|
 (defun get-sndfile-path (fname path)
   (let ((pname (pathname fname)))
     (if (and (uiop:absolute-pathname-p pname)
              (uiop:file-exists-p pname))
         pname
-        (or (path-find-file (format nil "~a.~a"
-                                    (pathname-name pname)
-                                    (pathname-type pname))
+        (or (path-find-file (file-namestring pname)
                             path)
             (warn "couldn't find file ~S in path" fname)))))
+|#
 
-#+linux
 (defun path-find-file (fname path)
+  "Return the full pathname of the first occurence of fname in path.
+
+@Arguments
+fname - String or Pathname of file.
+path - List of paths to search.
+"
   (let ((fname (pathname fname)))
     (if (uiop:file-exists-p fname)
         (namestring fname)
@@ -50,11 +54,14 @@
           for result = (string-trim
                         '(#\NEWLINE)
                         (with-output-to-string (str)
-                          (uiop:run-program (format nil "find ~a -name ~a" dir fname) :output str)))
+                          #-darwin
+                          (uiop:run-program (format nil "find ~a -name ~a -print -quit" dir fname) :output str)
+                          #+darwin
+                          (uiop:run-program (format nil "find ~a -name ~a -print -exit" dir fname) :output str)))
           while (string= result "")
-          finally (return (unless (string= result "") result))))))
+          finally (return (unless (string= result "") (pathname result)))))))
 
-#-linux
+#|
 (defun path-find-file (fname path)
   (let ((fname (pathname fname)))
     (if (uiop:file-exists-p fname)
@@ -64,62 +71,152 @@
           for result = (first (directory (format nil "~a/**/~a" dir fname)))
           until result
           finally (return result)))))
+|#
 
-(defun buffer-id (buffer)
-  "get index of buffer from registry."
-  (gethash buffer *buffer-ids*))
+(defun buffer-id (ref)
+  "Return index of buffer /ref/ from registry. ref can be the filename of
+a buffer or the buffer itself.
 
-(defun get-buffer (id)
-  "get buffer from registry by index."
-  (gethash id *buffers*))
+@Arguments
+buffer - Incudine buffer, Pathname or String denoting the filename of the buffer.
+
+@See-also
+clamps:incudine-bufs
+add-buffer
+buffer-name
+bufname=
+clamps-buffer-load
+find-buffer
+list-buffers
+remove-buffer
+remove-all-buffers
+"
+  (typecase ref
+    (buffer (gethash ref *buffer-ids*))
+    (t (gethash (find-buffer ref) *buffer-ids*))))
+
+;;; (namestring (pathname "/tmp/test.wav"))
+;;; (file-namestring (pathname "/tmp/test.wav"))
+;;; (directory-namestring (pathname "/tmp/test.wav"))
 
 (defun canonicalize-name (name)
-  "remove leading directories from name"
+  "Return filename of buffer"
   (let ((path (pathname name)))
-    (format nil "~a.~a" (pathname-name path) (pathname-type path))))
+    (file-namestring path)))
 
-(defun get-buffer-file (buffer)
+(defun buffer-name (buffer)
+  "Return the file-namestring of /buffer/.
+
+@Arguments
+buffer - Incudine buffer.
+
+@See-also
+clamps:incudine-bufs
+add-buffer
+buffer-id
+bufname=
+find-buffer
+list-buffers
+remove-buffer
+remove-all-buffers
+"
   (canonicalize-name (buffer-file buffer)))
 
+(defun find-buffer (ref)
+  "Return registered buffer with /ref/ either being a full pathname, the
+pathname-name, an integer id or a buffer.
 
+@Arguments
+ref - Integer denoting id of buffer or String or Pathname denoting the buffer's filename or a buffer.
 
-(defun find-buffer (name)
-  "find all buffers with a name being a full pathname or the
-pathname-name of <name>."
-  (or (gethash name *buffers*)
-      (let ((sfname (canonicalize-name name)))
-        (loop for entry being the hash-key of *buffer-ids*
-;;;              do (format t "~a, ~a~%" entry (if (typep entry 'incudine:buffer) (list (canonicalize-name (buffer-file entry)) sfname)))
-              if (and (typep entry 'buffer) (string= (canonicalize-name (buffer-file entry)) sfname))
-                collect entry into result
-              finally (return (if (= (length result) 1) (first result) result))))))
+@See-also
+clamps:incudine-bufs
+add-buffer
+buffer-id
+buffer-name
+bufname=
+clamps-buffer-load
+list-buffers
+remove-buffer
+remove-all-buffers
+"
+  (if (typep ref 'buffer)
+      (find-buffer (buffer-id ref))
+      (gethash ref *buffers*)))
 
 ;;; (loop for i below 10 if (evenp i) collect i into result finally (return result))
 
 (defun add-buffer (buf)
-  "add buffer to registry."
+  "Add buffer to registry.
+
+@Arguments
+buf - Incudine buffer.
+
+@See-also
+clamps:incudine-bufs
+buffer-id
+buffer-name
+bufname=
+clamps-buffer-load
+find-buffer
+list-buffers
+remove-buffer
+remove-all-buffers
+"
+  (declare (type buffer buf))
   (unless (gethash buf *buffer-ids*)
     (setf (gethash (or (pop *buffer-next-id*) (incf *buffer-max-id*)) *buffers*) buf)
     (setf (gethash buf *buffer-ids*) *buffer-max-id*)
     (setf (gethash (buffer-file buf) *buffers*) buf)
-    (setf (gethash (pathname-name (buffer-file buf)) *buffers*) buf)
+    (setf (gethash (file-namestring (buffer-file buf)) *buffers*) buf)
     buf))
 
-(defun remove-buffer (buf)
-  "remove buffer from registry."
-  (let ((id (buffer-id buf)))
+(defun remove-buffer (ref)
+  "Remove buffer from registry. Return t if buffer was found and
+removed, else return nil.
+
+@Arguments
+buf - Incudine:buffer, Integer denoting buffer id or filename of buffer.
+
+@See-also
+clamps:incudine-bufs
+add-buffer
+buffer-id
+buffer-name
+bufname=
+clamps-buffer-load
+find-buffer
+list-buffers
+remove-all-buffers
+"
+  (let* ((buf (find-buffer ref))
+         (id (gethash buf *buffer-ids*)))
     (unless (and
              id
              (remhash buf *buffer-ids*)
              (remhash (buffer-file buf) *buffers*)
+             (remhash (buffer-name buf) *buffers*)
              (if (remhash id *buffers*)
-                 (push id *buffer-next-id*)))
-      (warn "Can't remove buffer ~a: buf or id not found in databases!" buf))))
+                 (pushnew id *buffer-next-id*)))
+      (warn "Can't remove buffer ~a: buf or id not found in databases!" buf))
+    (if id t)))
 
 (defun remove-all-buffers ()
-  "remove all buffers from registry."
+  "Remove all buffers from registry.
+
+@See-also
+clamps:incudine-bufs
+add-buffer
+buffer-id
+buffer-name
+bufname=
+clamps-buffer-load
+find-buffer
+list-buffers
+remove-buffer
+"
   (setf *buffer-ids* (make-hash-table :test #'equal))
-  (setf *buffers* (make-hash-table))
+  (setf *buffers* (make-hash-table :test #'equal))
   (setf *buffer-next-id* '())
   (setf *buffer-max-id* -1)
   nil)
@@ -127,17 +224,50 @@ pathname-name of <name>."
 ;;; (remove-all-buffers)
 
 (defun bufname= (buf file)
-     "compare file with the filename of buf. If buf is a list, compare
+     "Compare /file/ with the filename of /buf/. If buf is a list, compare
 file to the filenames of all elements of list and return buf if any is
-matching."
+matching.
+
+@Arguments
+buf - Incudine:buffer
+file - String denoting the file.
+
+@See-also
+clamps:incudine-bufs
+add-buffer
+buffer-id
+buffer-name
+clamps-buffer-load
+find-buffer
+list-buffers
+remove-buffer
+remove-all-buffers
+"
      (cond
        ((null buf) nil)
        ((consp buf) (or (bufname= (first buf) file) (bufname= (rest buf) file)))
        (t (and (string= (format nil "~a" (buffer-file buf)) (format nil "~a" file)) buf))))
 
-(defun of-buffer-load (file &key (path cl-user:*sfile-path*))
-  "load and register buffer from file if not loaded already. Return
-buffer."
+(defun clamps-buffer-load (file &key (path cl-user:*sfile-path*))
+  "Load and register buffer from /file/ if not loaded already. Return
+buffer.
+
+@Arguments
+file - Pathname or String denoting a soundfile.
+:path - List of Pathnames or Strings to search for file.
+
+@See-also
+clamps:incudine-bufs
+add-buffer
+buffer-id
+find-buffer
+buffer-name
+bufname=
+list-buffers
+remove-buffer
+remove-all-buffers
+*sfile-path*
+"
   (let ((buf (find-buffer file)))
     (if (bufname= buf file)
         buf
@@ -145,7 +275,29 @@ buffer."
           (add-buffer (buffer-load fname))
           (warn "couldn't find soundfile in sfile-path: ~A" file)))))
 
-(setf (fdefinition 'ensure-buffer) #'of-buffer-load)
+(defun list-buffers ()
+  "Return a list /(buffer-id buffer-name buffer)/ for each entry in
+the clamps buffer registry.
 
-;;; (of-buffer-load "/home/orm/work/kompositionen/letzte-worte/snd/fl-s01-line01.wav")
+@See-also
+clamps:incudine-bufs
+add-buffer
+buffer-id
+buffer-name
+bufname=
+clamps-buffer-load
+find-buffer
+remove-buffer
+remove-all-buffers
+"
+  (let ((result
+          (loop
+            for k being the hash-keys of *buffers*
+            if (stringp k)
+              collect (let ((buf (find-buffer k)))
+                        (list (buffer-id buf) k buf)))))
+    (if result (sort result #'< :key #'first))))
 
+(setf (fdefinition 'ensure-buffer) #'clamps-buffer-load)
+
+;;; (clamps-buffer-load "/home/orm/work/kompositionen/letzte-worte/snd/fl-s01-line01.wav")

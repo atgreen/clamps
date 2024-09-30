@@ -8,9 +8,9 @@
  */
 
 :root {
-    color: #8b8e93;
+    color: var(--text-color);
     font-family: Dejavu Sans;
-    font-size: 10pt;
+    font-size: var(--global-font-size);
 }
 
 html {
@@ -22,17 +22,62 @@ body {
     margin: 0;
 }
 
+
+}
+
+
+
 div#page-body {
     display: grid;
     height: 100em;
     width: 100%;
-    grid-template-rows: 5em 1fr;
-    grid-template-areas: "top-menu"
+    grid-template-rows: 2em 3em 1fr;
+    grid-template-areas: "top-buttons"
+                         "top-menu"
                          "body-content";
 }
 
+#top-buttons {
+    grid-area: top-buttons;
+    background: var(--menu-background);
+    display: flex;    
+}
+
+#toc-button {
+    color:  var(--h2-color);
+    background-color: var(--text-background);
+    font-family: FontAwesome;
+    font-size: 1.5em;
+    padding-left: 0.8em;
+    margin-top: 0.3em;
+    position: relative;
+    border: none;
+}
+
+#toc-button:before {
+    content: "\f039";
+}
+
+#theme-button {
+    color:  var(--h2-color);
+    background-color: var(--text-background);
+    font-family: FontAwesome;
+    width: 1.5em;
+    height: 1.5em;
+    font-size: 0.82em;
+    position: relative;
+    margin-left: 0.5em;
+    margin-top: 0.88em;
+    border: 3px solid var(--h2-color);
+    border-radius: 10% 10%;
+}
+
+#theme-button:before {
+ content: "\f0eb";
+}
+
 .body-content {
-    background: #1e2129;
+    background: var(--text-background);
     grid-area: body-content;
     display: grid;
     width: 100%;
@@ -43,14 +88,15 @@ div#page-body {
 
 
 .toc-frame {
+    background: var(--toc-background);
     grid-area: toc-content;
-    background: #1a1c23;
+    background: var;
     height: 100em;
     padding: 0 1em;
 }
 
 .text-frame {
-    background: #1e2129;
+    background: var(--text-background);
     /* grid-area: text-content; */
     width: 100%;
     height: 100%;
@@ -59,7 +105,7 @@ div#page-body {
 
 .org-div-top-insert {
     grid-area: top-menu;
-    background: #060712;
+    background: var(--menu-background);
     /* background: white; */
     display: flex;
 } 
@@ -101,23 +147,23 @@ a:hover, a:active {
 
 h1 {
   font: bold 200% sans-serif;
-  /* color: #666; */
+  color: var(--h1-color);
 }
 h2 {
   font: bold 168% sans-serif;
-  /* color: #555; */
+  color: var(--h2-color);
 }
 h3 {
   font: bold 141% sans-serif;
-  /* color: #444; */
+  color: var(--h3-color);
 }
 h4 {
   font: bold 119% sans-serif;
-  /* color: #333; */
+  color: var(--h4-color);
 }
 h5 {
   font: bold 100% sans-serif;
-  color: #222;
+  color: var(--h4-color);
 }
 
 acronym, abbr {
@@ -447,5 +493,228 @@ dl.dictsyntax dt {
 dl.dictsyntax dd {
   margin: 0px;
 }
+
+[data-theme="dark"] {
+    --global-font-size: 13.5pt;
+    --clamps-dict-toc-width: 17.8em;
+    --clamps-toc-width: 17.8em;
+    --fomus-toc-width: 17.8em;
+    --text-font:  DejaVu, sans;
+    --header-font: DejaVu, sans-serif;
+    --monospace-font: monospace;
+    /* --header-font: Dejavu, sans; */
+    --text-background: #1e2129;
+    --text-color: #b5b9bf;
+    /* --toc-background: #1a1c23; */
+    /* --menu-background: #060712; */
+    /* --search-background: #00032c; */
+    --toc-background: #1e2129;
+    --menu-background: #1e2129;
+    --search-background: #1e2129
+    --img-background: #1131312;
+    --anchor-hover: #7ab6ff;
+    --anchor-toc: #518be2;
+    --anchor-active: #ffa500;
+    --i-color: #1fa03c;
+    /* --i-color: #187b2e; */
+    --arg-color: #d06060
+;    --b-color: #00000e;
+    --title-color: #7a7d87;
+    --h1-color: #7a7d87;
+    --h2-color: #7a7d87;
+    --h3-color: #7a7d87;
+    --h4-color: #7a7d87;
+    --h5-color: #7a7d87;
+    /* --nav-color: #1f3657 */
+    --nav-color: #284671;
+    --nav-hover: #518be2;
+    --footnote-separator: #b5b9bf;
+    --code-background: #121010;
+    --code-border-before: #black;
+    --code-border: #303030;
+    --code-text: white;
+    --code-keyword-color: #0c0;
+    --code-type-color: #87ceeb;
+    --code-string-color: #87cefa;
+    --rainbow-del-depth-error: #88090B;
+    --rainbow-del-depth-1: #ffff00;
+    --rainbow-del-depth-2: #a9a9a9;
+    --rainbow-del-depth-3: #ff1493;
+    --rainbow-del-depth-4: #adff2f;
+    --rainbow-del-depth-5: #00bfff;
+    --rainbow-del-depth-6: #ffff00;
+    --rainbow-del-depth-7: #cdad00;
+    --rainbow-del-depth-8: #cd8500;
+    --rainbow-del-depth-9: #8b4500;
+    --rainbow-del-mismatched: #88090B;
+    --rainbow-del-unmatched: #88090B;
+    
+        
+}
+
+[data-theme="light"] {
+    --global-font-size: 13.5pt;
+    --clamps-dict-toc-width: 17.8em;
+    --clamps-toc-width: 17.8em;
+    --fomus-toc-width: 17.8em;
+    --text-font:  DejaVu, sans;
+    --header-font: DejaVu, sans-serif;
+    --monospace-font: monospace;
+    /* --header-font: Dejavu, sans; */
+    --color-bg: #ffffff;
+    --color-fg: black;
+    --text-background: #ffffff;
+    --text-color: #000000;
+    --toc-background: #ffffff;
+    --menu-background: #fff;
+    --search-background: #ffffff
+    --img-background: #ffffff;
+    --anchor-hover: #7ab6ff;
+    --anchor-toc: #3e6bae;
+    --anchor-active: #ef9500;
+    --i-color: #1f903c;
+    /* --i-color: #187b2e; */
+    --arg-color: #b04040;
+    --b-color: #00000e;
+    --title-color: #5a5d67;
+    --h1-color: #5a5d67;
+    --h2-color: #5a5d67;
+    --h3-color: #5a5d67;
+    --h4-color: #5a5d67;
+    --h5-color: #5a5d67;
+    /* --nav-color: #1f3657 */
+    --nav-color: #284671;
+    --nav-hover: #7ab6ff;
+    --footnote-separator: #b5b9bf;
+    --code-background: #eee;
+    --code-border-before: #black;
+    --code-border: #303030;
+    --code-text: #000;
+    --code-keyword-color: #060;
+    --code-type-color: #87ab30;
+    --code-string-color: #7ab6ff;
+    --rainbow-del-depth-error: #88090B;
+    --rainbow-del-depth-1: #998800;
+    --rainbow-del-depth-2: #a9a9a9;
+    --rainbow-del-depth-3: #ff1493;
+    --rainbow-del-depth-4: #adff2f;
+    --rainbow-del-depth-5: #00bfff;
+    --rainbow-del-depth-6: #ffff00;
+    --rainbow-del-depth-7: #cdad00;
+    --rainbow-del-depth-8: #cd8500;
+    --rainbow-del-depth-9: #8b4500;
+    --rainbow-del-mismatched: #88090B;
+    --rainbow-del-unmatched: #88090B;
+}
+
+
+/*
+This file is from the Gentium project (https://software.sil.org/gentium/).
+Copyright (c) 2003-2023 SIL International (http://www.sil.org/) with Reserved
+Font Names "Gentium" and "SIL". This Font Software is licensed under the SIL
+Open Font License, Version 1.1 (http://scripts.sil.org/OFL).
+*/
+
+/* use Gentium Plus - Regular in .woff2 format */
+@font-face {
+  font-family: GentiumPlusW;
+  size-adjust: 110%;
+  src: url(../fonts/GentiumPlus-Regular.woff2);
+}
+/* use Gentium Plus - Italic in .woff2 format */
+@font-face {
+  font-family: GentiumPlusW;
+  size-adjust: 110%;
+  font-style: italic;
+  src: url(../fonts/GentiumPlus-Italic.woff2);
+}
+/* use Gentium Plus - Bold in .woff2 format */
+@font-face {
+	font-family: GentiumPlusW;
+        size-adjust: 110%;
+	font-weight: bold;
+	src: url(../fonts/GentiumPlus-Bold.woff2);
+}
+/* use Gentium Plus - Bold Italic in .woff2 format */
+@font-face {
+	font-family: GentiumPlusW;
+	font-weight: bold;
+        size-adjust: 110%;
+	font-style: italic;
+	src: url(../fonts/GentiumPlus-BoldItalic.woff2);
+}
+
+@font-face {
+	font-family: DejaVuMono;
+        size-adjust: 90%;
+	src: url(../fonts/DejaVuSansMono.woff);
+}
+
+@font-face {
+	font-family: DejaVuMono;
+	font-weight: bold;
+        size-adjust: 90%;
+	src: url(../fonts/DejaVuSansMono-Bold.woff);
+}
+
+@font-face {
+	font-family: DejaVuMono;
+        size-adjust: 90%;
+	font-style: italic;
+	src: url(../fonts/DejaVuSansMono-Oblique.woff);
+}
+
+@font-face {
+	font-family: DejaVuMono;
+        size-adjust: 90%;
+	font-weight: bold;
+	font-style: italic;
+	src: url(../fonts/DejaVuSansMono-BoldOblique.woff);
+}
+
+
+
+/*
+This file is from the Andika project (https://software.sil.org/andika/).
+Copyright (c) 2004-2023 SIL International (http://www.sil.org/) with Reserved
+Font Names "Andika" and "SIL". This Font Software is licensed under the SIL
+Open Font License, Version 1.1 (http://scripts.sil.org/OFL).
+*/
+
+/* use Andika - Regular in .woff2 format */
+@font-face {
+  font-family: AndikaW;
+  size-adjust: 100%;
+  src: url(../fonts/Andika-Regular.woff2);
+}
+/* use Andika - Italic in .woff2 format */
+@font-face {
+  font-family: AndikaW;
+  size-adjust: 100%;
+  font-style: italic;
+  src: url(../fonts/Andika-Italic.woff2);
+}
+/* use Andika - Bold in .woff2 format */
+@font-face {
+	font-family: AndikaW;
+        size-adjust: 100%;
+	font-weight: bold;
+	src: url(../fonts/Andika-Bold.woff2);
+}
+/* use Andika - Bold Italic in .woff2 format */
+@font-face {
+	font-family: AndikaW;
+        size-adjust: 100%;
+	font-weight: bold;
+	font-style: italic;
+	src: url(../fonts/Andika-BoldItalic.woff2);
+}
+
+@font-face {
+	font-family: FontAwesome;
+        size-adjust: 100%;
+	src: url(../fonts/fontawesome-webfont.woff2);
+}
+
 
 /* EOF */

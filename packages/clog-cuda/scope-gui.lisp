@@ -1,5 +1,5 @@
 ;;; 
-;;; levelmeter-gui.lisp
+;;; scope-gui.lisp
 ;;;
 ;;; **********************************************************************
 ;;; Copyright (c) 2024 Orm Finnendahl <orm.finnendahl@selma.hfmdk-frankfurt.de>
@@ -47,7 +47,7 @@
                                                   (create-bus t))
   (let* ((dsp
            (or (find-dsp id)
-               (let ((new (add-dsp 'master-bus-levelmeter :id id :node-group group
+               (let ((new (add-dsp 'master-bus-levelmeter id :node-group group
                                                           :audio-bus audio-bus :refs refs :num num
                                                           :channel-offset channel-offset
                                                           :create-bus create-bus)))

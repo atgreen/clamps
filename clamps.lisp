@@ -32,6 +32,18 @@
 (set-on-new-window #'clamps-gui :boot-file "/start.html")
 (set-on-new-window #'clog-dsp-widgets::meters-window :path "/meters" :boot-file "/start.html")
 
+(in-package :cl-midictl)
+
+#|
+(defun cl-midictl::ensure-default-midi-in (midi-in)
+  (or (cm:ensure-jackmidi midi-input)
+      (cm:ensure-jackmidi *midi-in1*)))
+
+(defun cl-midictl::ensure-default-midi-out (midi-out)
+  (or (cm:ensure-jackmidi midi-output)
+      (cm:ensure-jackmidi *midi-out1*)))
+|#
+
 (in-package #:clamps)
 
 (defparameter *svg-dir* nil)
@@ -41,15 +53,96 @@
 
 (defvar *clamps-gui-root* nil)
 
+(defun clamps-base-url ()
+  "Return the base url to access the Clamps Gui (nicknamed
+/<clamps-base-url>/ in this dictionary).
+
+Its default location is http://localhost:54619.
+
+/<clamps-base-url>/ on the browser side is corresponding to the
+path /<clamps-gui-root>/, so an address named
+/<clamps-base-url>/<file>/ will load the file located at
+/<clamps-gui-root>/<file>/ as HTML into the browser window.
+
+The location for the <<svg->browser><SVG Player Gui>> is at
+/<clamps-base-url>/svg-display/ which translates to the URL
+
+http://localhost:54619/svg-display
+
+@See-also
+clamps
+clamps-restart-gui
+clamps-gui-root
+gui
+meters
+"
+  (format nil "https://localhost:~d" clog:*clog-port*) )
+
 (defun clamps-gui-root ()
+  "Return the pathname of the Gui root directory. It is nicknamed
+/<clamps-gui-root>/ throughout this dictionary.
+
+/<clamps-gui-root>/ is the path corresponding to
+/<clamps-base-url>/ on the browser side, so any file named /<file>/
+put into the /<clamps-gui-root>/ directory can be accessed in the
+browser at the address /<clamps-base-url>/<file>/.
+
+@See-also
+clamps
+clamps-base-url
+clamps-restart-gui
+"
   *clamps-gui-root*)
 
-(defun svg-gui-path (str)
-  (namestring (merge-pathnames (format nil "svg/~a" str) (clamps-gui-root))))
+(defun svg-gui-path (&optional file)
+  "Return the full path of SVG file /file/ in the current GUI or the
+base-gui-path of svg files if /file/ is not supplied.
+
+@Arguments
+file - A String designating the filename of the SVG file.
+
+@Examples
+(svg-gui-path)
+;; => #P\"/tmp/www/svg/\"
+
+(svg-gui-path \"test.svg\")
+;; => #P\"/tmp/www/svg/test.svg\"
+
+@See-also
+clamps-gui-root
+"
+  (merge-pathnames (format nil "svg/~a" file) (ensure-directory (clamps-gui-root))))
 
 (defun clamps-restart-gui (gui-root &key (open t) (port 54619))
-  "restart the gui using gui-root as the root directory, optionally
-opening it in a browser."
+  "Reset the root directory of the Gui to /gui-root/www/, optionally
+opening the Gui in a browser window.
+
+@Arguments
+gui-root - ist the path where to put the /www/ subfolder for files
+accessible by the gui (nicknamed /<clamps-gui-root>/ throughout
+this dictionary).
+
+:open - is a flag indicating whether to open <<clamps-base-url>> in a
+browser window after starting the gui.
+
+In the given path the following directories
+will be created:
+
+- /<clamps-gui-root>/www//
+- /<clamps-gui-root>/www/svg//
+
+file path for svg files used in the /svg-display/ page of the
+Gui.
+
+Any files which need to be accessible by the Gui have to be put
+into the /<clamps-gui-root>/www// subdirectory with their filenames
+relative to this directory.
+
+@See-also
+clamps
+clamps-base-url
+clamps-gui-root
+"
   (let* ((dir (pathname (ensure-directory gui-root)))
          (svg-dir-path (format nil "~Awww/svg/" (namestring dir))))
     (format t "(re)starting gui...~%")
@@ -60,7 +153,7 @@ opening it in a browser."
     (uiop:run-program (format nil "mkdir -p ~Aats" (namestring dir)))
     (setf ats-cuda:*ats-snd-dir* (merge-pathnames "snd/" dir))
     (setf ats-cuda:*ats-file-dir* (merge-pathnames "ats/" dir))
-    (setf cm.svgd:svg-dir (merge-pathnames "www/svg/" dir))
+    (setf cm.svgd:svg-dir (merge-pathnames "svg/" *clamps-gui-root*))
     (let ((targetpath (namestring (merge-pathnames dir "/www"))))
       (dolist (dir-or-file '("js" "css" "favicon.ico" "start.html"))
         (let* ((subdirpath (format nil "www/~a" dir-or-file))
@@ -166,6 +259,13 @@ supplied and gets interned as a parameter."
   (slynk:eval-in-emacs `(sly-interactive-eval "(cm)")))
 
 (defun incudine-rts-hush ()
+  "Sends an all-notes-off message to all channels of
+/*​midi-out1​*/ and
+calls <<node-free-unprotected>>.
+
+@Note
+This command is bound to the Keyboard Sequence /<C-.>/ in emacs.
+"
   (incudine:flush-pending)
   (dotimes (chan 16) (cm::sprout
                       (cm::new cm::midi-control-change :time 0
@@ -203,7 +303,14 @@ supplied and gets interned as a parameter."
   (cm::set-standard-hush))
 
 (defun reset-logger-stream ()
-  (setf incudine.util:*logger-stream* *error-output*))
+  "Resets /incudine:*logger-stream*/ to /*​error-output​*/ Call this
+function, if calls to /incudine.util:msg/ don't produce any output in
+the REPL.
+
+@Note
+This function needs to be called if /Clamps/ is started from a Lisp
+Image.
+"  (setf incudine.util:*logger-stream* *error-output*))
 
 (defparameter *sly-connected-hooks*
   (list #'cm::install-standard-sly-hooks #'cm::reset-logger-stream))
@@ -230,17 +337,41 @@ supplied and gets interned as a parameter."
   (setf *osc-inkscape-export-in* nil))
 
 (defun gui ()
-  (clog:open-browser))
+  "Open the page at /<clamps-base-url>/ in a Browser.
+
+@See-also
+clamps-base-url
+meters
+"  (clog:open-browser))
 
 (defun meters ()
-  (clog:open-browser :url (format nil "http://127.0.0.1:~A/meters" clog::*clog-port*)))
+  "Open the levelmeter page at /<clamps-base-url>/meters/ in a
+Browser.
+
+@See-also
+clamps-base-url
+gui
+"  (clog:open-browser :url (format nil "http://127.0.0.1:~A/meters" clog::*clog-port*)))
 
 (defun clamps-start (&key (gui-root "/tmp") (qsynth nil) (open-gui nil))
-  "start clamps, setting the gui root directory and optinally starting
-qsynth and opening the gui in a browser window."
+  "Entry function called by <<clamps>> to start the webserver for the
+GUI, call <<rts>> to set up IO and MIDI, start the OSC responder for
+Incudine, optionally start qsynth (Linux only) and open the gui in a
+browser. This function should normally not be called by the user.
+
+@Arguments
+gui-root - The root path of the gui
+qsynth - Boolean indicating whether to start the qsynth softsynth (Linux only).
+open-gui - Boolean indicating whether to open the gui in a Browser window.
+
+@See-also
+clamps
+clamps-gui-root
+rts
+"
   (setf *package* (find-package :clamps))
   (restart-inkscape-osc)
-  ;;; rts also initializes midi
+;;; rts also initializes midi
   (rts)
 ;;;  (unless (cm::rts?) (rts))
   (if qsynth (restart-qsynth))

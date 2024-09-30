@@ -6,7 +6,7 @@
 #+OPTIONS: toc:2 h:3 html-multipage-join-empty-bodies:t
 #+OPTIONS: html-multipage-split:toc
 #+OPTIONS: html-multipage-toc-to-top:t
-#+OPTIONS: html-multipage-export-directory:overview
+#+OPTIONS: html-multipage-export-directory:html/clamps-doc/overview
 #+OPTIONS: html-multipage-open:nil
 #+OPTIONS: html-multipage-postamble-position:bottom
 #+OPTIONS: html-postamble:nil
@@ -14,36 +14,47 @@
 #+OPTIONS: html-multipage-include-default-style:nil
 #+HTML_DOCTYPE: xhtml5
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="../css/overview.css" />
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="../css/htmlize.css" />
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="../css/themes.css" />
 #+HTML_HEAD: <link href="./pagefind/pagefind-ui.css" rel="stylesheet">
 #+HTML_HEAD: <script src="./pagefind/pagefind-ui.js"></script>
+#+HTML_HEAD: <script src="../js/clamps-doc.js"></script>
 # #+SETUPFILE: theme-readtheorg-local.setup
 #+BEGIN_SRC emacs-lisp :exports results :results: none
-  (defun export-overview-syms (s backend info)
-    (with-temp-buffer 
-      (insert "(mapcar
-   (lambda (entry)
-     (let ((symbol (intern (car entry)
-  			 ,*clamps-overview-symbols*)))
-       (if (boundp symbol)
-  	 (push (cadr entry) (symbol-value symbol))
-         (set symbol (cdr entry)))))
-   '(\n")
-      (mapcar
-       (lambda (entry)
-         (insert
-          (format "   (\"%s\" \"overview/%s\")\n"
-                  (org-html-element-title (car entry))
-                  (plist-get (cdr entry) :href))))
-       (cl-remove-if
-        (lambda (x) (= 1 (plist-get (cdr x) :relative-level)))
-        (plist-get info :multipage-toc-lookup)))
-      (insert "))\n")
-      (write-region (point-min) (point-max) "../extra/elisp/clamps-overview-lookup.el"))
-    (load (format "%s%s" (file-name-directory (buffer-file-name))
-               "../extra/elisp/clamps-overview-lookup.el"))
-    s)
+      (load (format "%s%s" (file-name-directory (buffer-file-name))
+                    "../extra/elisp/clamps-dict.el"))
+      (load (format "%s%s" (file-name-directory (buffer-file-name))
+                    "../extra/elisp/clamps-lookup.el"))
+        (defun export-overview-syms (s backend info)
+          (with-temp-buffer 
+            (insert "
+    (defvar *clamps-overview-symbols*)
+    (setq *clamps-overview-symbols* (make-vector 63 0))
+    (mapcar
+         (lambda (entry)
+           (let ((symbol (intern (car entry)
+        			 ,*clamps-overview-symbols*)))
+             (if (boundp symbol)
+        	 (push (cadr entry) (symbol-value symbol))
+               (set symbol (cdr entry)))))
+         '(\n")
+            (mapcar
+             (lambda (entry)
+               (insert
+                (format "   (\"%s\" \"overview/%s\")\n"
+                        (org-html-element-title (car entry))
+                        (plist-get (cdr entry) :href))))
+             (cl-remove-if
+              (lambda (x) (= 1 (plist-get (cdr x) :relative-level)))
+              (plist-get info :multipage-toc-lookup)))
+            (insert "))\n")
+            (write-region (point-min) (point-max) "../extra/elisp/clamps-overview-lookup.el"))
+          (load (format "%s%s" (file-name-directory (buffer-file-name))
+                     "../extra/elisp/clamps-overview-lookup.el"))
+          s)
 #+END_SRC
 #+BIND: org-export-filter-multipage-functions (export-overview-syms)
+#+BIND: org-html-htmlize-output-type css
 
 # fomus documentation integrieren
 
@@ -61,18 +72,18 @@
 
   In this regard it is comparable to other realtime and non-realtime
   music programming environments like [[https://en.wikipedia.org/wiki/Pure_Data][Pure Data]], [[https://en.wikipedia.org/wiki/Max_(software)][Max/MSP]], [[https://en.wikipedia.org/wiki/Csound][Csound]],
-  [[https://en.wikipedia.org/wiki/SuperCollider][SuperCollider]], [[https://ccrma.stanford.edu/software/clm/][CLM]], [[https://commonmusic.sourceforge.net/][Common Music]], [[https://chuck.stanford.edu/][Chuck]], [[https://faust.grame.fr/][Faust]], [[https://forum.ircam.fr/projects/detail/openmusic/][Open Music]],
+  [[https://en.wikipedia.org/wiki/SuperCollider][SuperCollider]], [[https://ccrma.stanford.edu/software/clm/][CLM]], [[https://commonmusic.sourceforge.net/][Common Music]], [[https://chuck.stanford.edu/][Chuck]], [[https://faust.grame.fr/][Faust]], [[https://www.composersdesktop.com/][CDP]], [[https://forum.ircam.fr/projects/detail/openmusic/][Open Music]],
   [[https://opusmodus.com/][OpusModus]], [[https://michael-edwards.org/sc/][Slippery Chicken]] and [[https://www.music21.org/music21docs/][Music21]].
 
   Clamps is a collection of tools, developed over the course of some
   decades primarily for the artistic work of its author, biased by his
   conceptual and aesthetic ideas. It is put together and made public
-  in the hope it might be useful for others, but -like one of the
-  integral characteristics of the beauty of Art in general- without
+  in the hope it might be useful for others, but --- like one of the
+  integral characteristics of the beauty of Art in general --- without
   any explict or implicit warranty that it fits any purpose
   whatsoever.
   
-  The Documentation of Clamps is split into four parts, accessible
+  The Documentation of Clamps is split into five parts, accessible
   using the Top Menu:
 
   - The [[Introduction][Overview]] explains the raison d'etre of Clamps and gives a
@@ -102,6 +113,10 @@
     are linked in the Emacs Lisp Interface with the same /<C-c C-d c>/
     keyboard shortcut as the CM Dictionary.
 
+    
+  - [[../fomus/index.html][Fomus]] is a reproduction of the original documentation of [[https://fomus.common-lisp.dev/][FOMUS]],
+    added here for convenience.
+    
 #+HTML: <h4>Note</h4>
 #+LATEX: NOTE
 
@@ -128,7 +143,7 @@
   available to the public is my contribution intended to pay back to
   the community.
 
-  Orm Finnendahl, August 2025
+  Orm Finnendahl, August 2024
 ** Why Clamps?
   
    Clamps is written in [[https://en.wikipedia.org/wiki/Common_Lisp][Common Lisp]]. A main advantage of using Common
@@ -180,7 +195,7 @@
    top of the following packages which do the heavy lifting of Clamps'
    functionality:
 
-   - [[Incudine][Incudine]]
+   - [[#Incudine.overview][Incudine]]
      
    - [[Common Music][Common Music]]
 
@@ -193,7 +208,9 @@
    These systems and their contribution to Clamps are described in the
    following subsections.
 *** Incudine
-
+    :PROPERTIES:
+    :CUSTOM_ID: Incudine.overview
+    :END:
     [[https://incudine.sourceforge.net/][Incudine]] is the backbone of the system for everything related to
     [[https://en.wikipedia.org/wiki/Real-time_computing][Real-time computing]] or [[https://en.wikipedia.org/wiki/Digital_signal_processing][DSP]]. It is actively developed and
     maintained at the time of writing this manual by Tito Latini and
@@ -215,9 +232,9 @@
     the last Common Lisp version 2.12, released around
     2008/2009. Although this version already contained realtime
     capablilities, this functionality has been adapted in Clamps using
-    [[Incudine][Incudine]]. Clamps extends the functionality of CM by adding classes
+    Incudine. Clamps extends the functionality of CM by adding classes
     for [[https://en.wikipedia.org/wiki/SVG][SVG]] import/export as well as [[https://en.wikipedia.org/wiki/SFZ_(file_format)][SFZ]] and sample based in-/output
-    realized using [[Incudine][Incudine]].
+    realized with Incudine.
 *** FOMUS
     [[https://fomus.sourceforge.net/][FOMUS]] is a system for score output originally developed in Common
     Lisp in 2005-2007 by David Psenicka. It integrates well with
@@ -228,12 +245,12 @@
     [[https://github.com/ormf/cl-ats][ATS]] was originally developed by Juan Pampin in the early 2000s
     using Common Lisp for the analysis, transformation and
     (re)synthesis of audio files using FFT based algorithms similar to
-    [[https://www.klingbeil.com/spear/][SPEAR]]. It predates SPEAR by nearly a decade and has been published
-    with an open source license making it eligible for integration
-    into Clamps. In addition to the analysis of sinusoidal components
-    performed by SPEAR it also captures and synthesizes the residual
-    noise component of the analyzed audio files. For Clamps the
-    synthesis engine has been completely rewritten in [[Incudine][Incudine]].
+    [[https://www.klingbeil.com/spear/][SPEAR]]. ATS has been published with an open source license making
+    it eligible for integration into Clamps. In addition to the
+    analysis of sinusoidal components performed by SPEAR it also
+    captures and synthesizes the residual noise component of the
+    analyzed audio files. For Clamps, the synthesis engine has been
+    completely rewritten in Incudine.
 
 *** CLOG
     [[https://github.com/rabbibotton/clog][CLOG]] is a web based system written by David Botton in Common Lisp
@@ -304,9 +321,8 @@
 
     - /cm-svg/
 
-      Infrastructure to import and export CM events to and from SVG
+      Infrastructure to import and export CM events from and to SVG
       files.
-
     - /cm-utils/
 
       Package defining a generalized process mechanism called
@@ -325,7 +341,7 @@
       the creation of sophisticated GUIs nowadays taken for granted in
       computer music environments, but allows for collaborative
       performances with multiple synced GUIs using standard hardware
-      like Mobile phones or Tablets without the need to install
+      like Mobile Phones or Tablets without the need to install
       specialized programs.
 
     - /ats-cuda-display/
@@ -359,6 +375,9 @@
 
       A collection of Common Lisp utility functions.
 * Installation
+  :PROPERTIES:
+  :CUSTOM_ID: installation
+  :END:
 ** clamps-install
    Clamps is currently supported on the Linux and OSX platforms. It
    can be installed using the [[https://github.com/ormf/clamps-install][clamps-install]] repository on
@@ -400,6 +419,9 @@
     Dictionary]] or [[../clamps-dict/index.html][Clamps Dictionary]], which is integrated in the
     browser-based clamps documentatiion.
 *** Incudine
+    :PROPERTIES:
+    :CUSTOM_ID: Incudine-Help
+    :END:
     Incudine has different formats to get help. It is available in the
     Internet at the [[https://incudine.sourceforge.net/][Incudine Home Page]]. Local documentation can be
     generated in different formats, like /[[https://en.wikipedia.org/wiki/Texinfo][texinfo]]/, /html/ or any
@@ -417,14 +439,14 @@
 
     #+attr_html: :width 80%
     #+CAPTION: Context help of function arguments in the Minibuffer
-    [[file:./img/function-help.png]]
+    [[./img/function-help.png]]
 ** Finding Source Definitions
     To jump to the source definition of any compiled expression, use
-    the /<C-.>/ key. This will jump to definitions in other files,
+    the /<M-.>/ key. This will jump to definitions in other files,
     opening them if necessary. To get back to the place before the
-    jump, press the /<C-,>/ key. This is recursive: Repeated jumps to
-    source locations with /<C-.>/ can be reversed one by one with the
-    same number of /<C-,>/.
+    jump, press the /<M-,>/ key. This is recursive: Repeated jumps to
+    source locations with /<M-.>/ can be reversed one by one with the
+    same number of /<M-,>/.
 ** Code Inspection
    Sly comes with a powerful and versatile code inspector. It can be
    invoked by pressing the /<C-c I>/ key sequence after an expression
@@ -435,7 +457,7 @@
    
     #+attr_html: :width 80%
     #+CAPTION: The Sly Inspector invoked on (make-instance 'sfz)
-    [[file:../img/sly-inspector.png]]
+    [[file:./img/sly-inspector.png]]
    
    Depending on the type of expression it is possible to navigate to
    subsequences of inspected sequences, see and inspect the slots of

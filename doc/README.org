@@ -1,0 +1,8 @@
+#+TITLE: README
+
+* Clamps Documentation
+  The complete HTML documentation is contained in
+  "clamps/doc/clamps-doc.tgz". Unpacking the archive will result in a
+  folder called "clamps-doc" which contains the subfolders of the 5
+  parts of the documentation and the file index.html, which can be
+  opened with a Webbrowser.

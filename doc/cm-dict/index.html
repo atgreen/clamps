@@ -16,8 +16,59 @@
       // hash found
       } else {
       // No hash found
+      init();
       }
       }
+      const systemSettingDark = window.matchMedia("(prefers-color-scheme: dark)");
+      const localStorageTheme = localStorage.getItem("clamps-doc-theme");
+      var currentThemeSetting;
+      
+      function calculateSettingAsThemeString({ localStorageTheme, systemSettingDark }) {
+      if (localStorageTheme !== null) {
+          return localStorageTheme;
+      }      
+      if (systemSettingDark.matches) {
+          return "dark";
+      }
+      return "light";
+      }
+      function toggleTheme () {
+
+    if (currentThemeSetting == "light")
+        currentThemeSetting = "dark";
+    else
+        currentThemeSetting = "light";
+      localStorage.setItem("clamps-doc-theme", currentThemeSetting);
+      document.querySelector("html").setAttribute("data-theme", currentThemeSetting);
+}
+
+      function init() {
+      currentThemeSetting = calculateSettingAsThemeString({ localStorageTheme, systemSettingDark })
+      let mainBody = document.getElementById('page-body');
+      const topButtons = document.createElement('div');
+      const tocButton = document.createElement('button');
+      const themeButton = document.createElement('button');
+      //    console.log(navLeft);
+      console.log('init clamps-doc.js');
+      console.log(document.getElementById(currentThemeSetting));
+      topButtons.setAttribute('id', 'top-buttons');
+      tocButton.setAttribute('id', 'toc-button');
+      themeButton.setAttribute('id', 'theme-button');
+      mainBody.insertBefore(topButtons, mainBody.firstChild);
+      topButtons.appendChild(tocButton);
+      topButtons.appendChild(themeButton);
+      
+      <!-- tocButton.addEventListener('click', () => { -->
+      <!-- toggleToc(); -->
+      <!-- }); -->
+      themeButton.addEventListener('click', () => {
+      //      alert('New button clicked!');
+      toggleTheme();
+      });
+      document.querySelector("html").setAttribute("data-theme", currentThemeSetting);
+      localStorage.setItem("theme", currentThemeSetting);
+      }
+      
     </script>
   </head>
   <div id="page-body">

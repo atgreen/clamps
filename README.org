@@ -4,7 +4,8 @@
 
 ** Overview
 
-   clamps is a system for realtime and non-realtime music production
+   Clamps, short for "Common Lisp Aided Music Production System", is a
+   software system for realtime and non-realtime music production
    written in Common Lisp. It enables a seamless workflow between
    high-level structures to define musical processes all the way down
    to low level dsp definitions for sound creation including browser
@@ -12,13 +13,18 @@
    performances. In that respect it combines features of systems like
    OpenMusic, SuperCollider or the Pure Data/Max family of software.
 
-   The components rely on and extend software not written by the
-   author. The most important are listed under Dependencies.
+   The components of Clamps rely on and extend software not written by
+   the author. The most important are:
 
-   There is extensive documentation contained in the repository. To
-   browse the documentation online use this link:
+   - [[#Incudine.overview][Incudine]]
+     
+   - [[Common Music][Common Music]]
 
-   [[Online doc not yet available]]
+   - [[FOMUS][FOMUS]]
+
+   - [[ATS][ATS]]
+     
+   - [[CLOG][CLOG]]
 
 ** Installation
 
@@ -26,31 +32,16 @@
    [[https://github.com/ormf/clamps-install][clamps-install]] has been created. Please consult the installation
    instructions there.
 
-** Prerequisites
+** Documentation
 
-   - Jack
+   For Documentation refer to the =doc= folder in this
+   repository. There is a compressed archive containing all
+   documentation as cross-referenced HTML.
 
-   - SBCL
+   Alternatively, to get an overview, see [[https://github.com/ormf/clamps/blob/main/doc/overview.org][doc/overview.org]]. More
+   specific information about the packages can be obtained from
+   [[https://github.com/ormf/clamps/blob/main/doc/clamps.org][doc/clamps.org]]. In addition [[https://github.com/ormf/clamps/blob/main/doc/clamps-dictionary.org][clamps-dictionary.org]] contains an API
+   reference with examples.
 
-   - Quicklisp
-
-   - Gnu Emacs
-
-   - git
-** Dependencies
-
-   - Incudine
-
-     Used for sample accurate scheduling, the definition of the DSP
-     parts and realtime IO (Audio, MIDI, OSC...).
-
-   - Common Music (including FOMUS)
-
-     Used as a high level interface for algorithmic composition,
-     im/export from/to MIDI, SVG, Notation and realtime output (using
-     incudine).
-
-   - CLOG
-
-     Used for browser based interactive GUI definitions.
-     
+   Please note that the documentation currently is in progress as
+   clamps hasn't been officially released yet.

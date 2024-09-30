@@ -63,8 +63,38 @@ to be supplied. The sym of the stream gets interned as a parameter."
      (initialize-io ,sym)
      (values ',sym)))
 
+(defun cl-midictl::ensure-default-midi-out (midi-output)
+  (or (cm:ensure-jackmidi midi-output)
+      (cm:ensure-jackmidi *midi-out1*)))
+
 (defun rts (&key (rt-wait 0))
-  (declare (ignore rt-wait))
+  "Start the real-time system of Clamps. This functions sets the
+following special variables:
+
+<<*midi-in1*>> -- The default Midi Input
+
+<<*midi-out1*>> -- The default Midi Output
+
+<<*rts-out*>> -- The default output for realtime events from Clamps/CM.
+
+It also starts the rt engine of incudine calling
+/incudine:rt-start/ and the midi receivers.
+
+@Arguments
+rt-wait - Time in seconds to wait before starting.
+@Note
+
+This command is an replacement of the /rts/ command of CM, described
+<<../cm-dict/index.html#rts-fn.html><here>>, so none of the options
+mentioned there or the decription in
+<<../cm-dict/index.html#rts-topic.html><RTS>> apply to Clamps. Other
+related CM functions, like /rts-pause/, /rts-continue/ and /rts-stop/
+also don't work in Clamps.
+
+@See-also
+clamps
+rts?
+"  (declare (ignore rt-wait))
 ;;;  (cm)
   (let ((result (cl-midictl:start-midi-engine)))
     (setf *midi-in1* (first result))
@@ -82,7 +112,11 @@ to be supplied. The sym of the stream gets interned as a parameter."
   :cm-rts-started)
 
 (defun rts? (&optional arg)
-  (declare (ignore arg))
+  "Checks if rts is started and running.
+
+@See-also
+rts
+"  (declare (ignore arg))
   (and (eq :started (incudine:rt-status))
        *cm-rts-started*))
 
@@ -157,18 +191,4 @@ to be supplied. The sym of the stream gets interned as a parameter."
               ((2) (error "enqueue: RTS not running."))))
     (values)))
 
-(in-package :cl-midictl)
 
-(defmethod initialize-instance :after ((instance midi-controller) &rest args)
-  (declare (ignorable args))
-  (with-slots (id midi-input midi-output) instance
-;;    (format t "~&midictl-id: ~a ~%" id)
-    (if (gethash id *midi-controllers*)
-        (warn "id already used: ~a" id)
-        (progn
-          (format t "adding controller ~S~%" id)
-          (unless midi-input (error "no midi-input specified for ~a" instance))
-          (unless midi-output (error "no midi-output specified for ~a" instance))
-          (setf midi-output (cm:ensure-jackmidi midi-output))
-          (push instance (gethash midi-input *midi-controllers*))
-          (setf (gethash id *midi-controllers*) instance)))))
