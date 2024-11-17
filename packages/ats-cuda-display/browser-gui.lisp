@@ -74,7 +74,7 @@ clamps-base-url
   (when (and ats-amod ats-fmod)
     (setf ats-player-node-id (incudine:next-node-id))
     (if (ats-sound-bands ats-sound)
-        (incudine::sin-noi-rtc-synth* (or (first (get-val ats-mousepos)) 0.0) ats-sound
+        (incudine::sin-noi-rtc-synth* (float (or (first (get-val ats-mousepos)) 0.0) 1.0d0) ats-sound
                                       :amp-scale 0.1
                                       :id ats-player-node-id
                                       :res-bal (get-val ats-res-balance)
@@ -145,7 +145,7 @@ clamps-base-url
   (setf ats-crosshairs (make-ref 1))
   (setf ats-contrast (make-ref 0.1))
   (setf ats-mousepos (make-ref '(0 0)))
-  (setf ats-scale (make-ref 1))
+  (setf ats-scale (make-ref 0.3))
   (setf ats-res-balance (make-ref 0.5))
   (setf ats-play (make-ref 0))
   (setf ats-bw (make-ref 1))
@@ -159,7 +159,7 @@ clamps-base-url
                      (set-control ats-player-node-id :res-bal res-bal))))))
   (setf data-watch
         (watch (lambda ()
-                 (set-val ats-shift-x (/ (get-val ats-width) 2))
+                 (set-val ats-shift-x (* (get-val ats-scale) (/ (get-val ats-width) 2)))
                  )))
   (setf play-watch
         (watch (lambda () (if (zerop (get-val ats-play))
@@ -180,15 +180,15 @@ clamps-base-url
   (setf pos-watch
         (watch (lambda ()
                  (let* ((num-partials (ats-sound-partials ats-sound))
-                        (maxfreq (float (+ 100 (aref (ats-sound-frq-av ats-sound) (1- num-partials))) 1.0))
-                        (duration (float (ats-sound-dur ats-sound) 1.0)))  
+                        (maxfreq (float (+ 100 (aref (ats-sound-frq-av ats-sound) (1- num-partials)))))
+                        (duration (float (ats-sound-dur ats-sound))))  
                    (destructuring-bind (x y) (get-val ats-mousepos)
                      (let ((bw (get-val ats-bw)))
                        (when (and ats-sound ats-player-node-id)
-                         (set-control ats-player-node-id :soundpos x)
+                         (set-control ats-player-node-id :soundpos (float x 1.0d0))
                          (let* ((frames (ats-sound-frames ats-sound))
                                 (soundpos x)
-                                (mousefreq (* (max 0.0 (min y 1.0)) maxfreq)))
+                                (mousefreq (float (* (max 0.0 (min y 1.0)) maxfreq))))
                            (set-val ats-freq mousefreq)
                            (set-val ats-time (* x duration))
                            (if (<= num-partials (length ats-amod))
@@ -200,8 +200,11 @@ clamps-base-url
                                                                 (round (* soundpos
                                                                           (1- frames))))))
                                      do (setf (aref ats-amod partial)
-                                              (ou:db->amp (* -18 (abs (/ (- freq mousefreq) (* 2 maxfreq bw))))))))))))))))
+                                              (float (ou:db->amp (* -18 (abs (/ (- freq mousefreq) (* 2 maxfreq bw))))) 1.0d0))))))))))))
+  (ats->browser ats-sound)
   nil)
+
+(ats-display-init)
 
 (defun ats-set-keyboard-mouse-shortcuts (container ats-svg ats-play ats-bw ats-contrast ats-res-balance)
   "set key and mouse wheel handlers in the ats-display gui."

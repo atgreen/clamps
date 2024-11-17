@@ -38,8 +38,16 @@ create-lsample
 
 (defparameter *sfz-preset-lookup* (make-hash-table))
 
+(defun set-clamps-doc-root (url)
+  (slynk:eval-in-emacs `(setq *common-music-doc-root* ,url)))
+
+(defvar *clamps-doc-root* (concatenate 'string "file://" (namestring (merge-pathnames (asdf:system-relative-pathname :clamps "doc/html/clamps-doc/")))))
+
 (load (merge-pathnames ".clampsinit.lisp" (user-homedir-pathname))
       :if-does-not-exist nil)
+
+(defun clamps-image-start ()
+  (setf *package* (find-package :cl-user)))
 
 (defun clamps (&key (gui-root "/tmp") (qsynth nil) (open-gui nil))
   "Start Clamps including the Gui. This function can be called from the
@@ -85,6 +93,7 @@ rts
            (apply (find-symbol (string fn) :clamps) args))
          (cmvar (var)
            (symbol-value (find-symbol (string var) :cm))))
+    (cl-user::set-clamps-doc-root cl-user::*clamps-doc-root*)
     (setf *package* (find-package :clamps))
     (setf *readtable* (cmvar :*cm-readtable*))
     ;; add slime readtable mapping...
@@ -105,4 +114,4 @@ rts
     (funcall #'clampscall :clamps-start
              :gui-root gui-root :qsynth qsynth :open-gui open-gui)))
 
-(export '(*sfz-preset-lookup* *sfz-preset-path* *sfile-path* clamps clamps-no-gui) 'cl-user)
+(export '(*sfz-preset-lookup* *sfz-preset-path* *sfile-path* set-clamps-doc-root *clamps-doc-root* clamps clamps-no-gui clamps-image-start) 'cl-user)

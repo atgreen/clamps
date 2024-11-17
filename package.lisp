@@ -18,15 +18,17 @@
 ;;;
 ;;; **********************************************************************
 
-
-
 (defpackage :clamps
-  (:export cl-user:clamps
+  (:export set-standard-pitch
+           cl-user:clamps
            ats-cuda-display:ats->svg
            incudine-bufs:find-buffer
            cl-sfz:sfz-preset-lsamples
            cl-sfz:sfz-preset-buffers
-           cl-sfz:get-sfz-preset orm-utils:get-props-list orm-utils:m-exp
+           cl-sfz:get-sfz-preset
+           orm-utils:ftom orm-utils:mtof
+
+           orm-utils:get-props-list orm-utils:m-exp
            output-stream cl-midictl:midi-output cl-midictl:get-ref
            orm-utils:delete-props cl-midictl:buchla-scale
            incudine-bufs:ensure-buffer orm-utils:call/collecting
@@ -41,7 +43,7 @@
            of-incudine-dsps:play-buffer-stretch-env-out orm-utils:make-quantlist
            set-basedir clamps-base-url orm-utils:slurp
            orm-utils:parse-proplist orm-utils:m-exp-fn
-           orm-utils:r-exp-dev clog-dsp-widgets:clog-dsp-widgets-initialize
+           orm-utils:r-lin-dev orm-utils:r-exp-dev clog-dsp-widgets:clog-dsp-widgets-initialize
            clog-dsp-widgets:new-gui-window
            clog-dsp-widgets:create-o-numbox orm-utils:amp->db
            cl-midictl:handle-midi-in
@@ -68,7 +70,7 @@
            cl-midictl:update-preset-buttons clog-dsp-widgets:pulse-on
            ats-cuda-display:restore-tables orm-utils:make-keyword
            orm-utils:m-exp-dev orm-utils:fv2ct cl-midictl:*midi-cc-fns*
-           clamps:reset-logger-stream meters clamps-gui-root
+           reset-logger-stream meters clamps-gui-root
            incudine-bufs:buffer-id clog-dsp-widgets:pulse-off
            clog-dsp-widgets:*out-refs* orm-utils:rmprop orm-utils:multf
            of-incudine-dsps:play-buffer-stretch* orm-utils:r-lin idump
@@ -556,12 +558,15 @@
   (:shadowing-import-from #:incudine.util
                           #:msg)
 
+  (:shadowing-import-from #:clog
+                          #:title #:style #:html-document
+                          #:set-on-new-window)
+
   (:shadowing-import-from #:of-incudine-dsps #:clip)
   (:shadowing-import-from #:cl-poolplayer #:args)
 
   (:use #:cl #:cl-user #:cm #:of-incudine-dsps #:ou)
-  (:shadow #:mtof #:ftom
-           #:buffer #:buffer-frames
+  (:shadow #:buffer #:buffer-frames
            #:buffer-sample-rate
            #:node #:bus
            #:envelope
@@ -595,4 +600,6 @@
         #:ats-cuda-display
         #:clog-midi-controller
         #:cm
+        #:orm-utils
+        #:clog-dsp-widgets
         ))
