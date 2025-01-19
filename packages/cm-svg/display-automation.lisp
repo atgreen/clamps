@@ -149,7 +149,7 @@ arg2 - Number denoting the bets per minute.
                           (typecase obj
                             (poolevt (sv* obj :stretch (get-val cm.svgd:timescale)))
                             (t (sv* obj :duration (get-val cm.svgd:timescale))))))
-;;;                    (format t "~a~%" obj)
+                    (incudine.util::msg :info "~a~%" obj)
                     (sprout obj))
                   ))
               ))
@@ -229,7 +229,7 @@ arg2 - Number denoting the bets per minute.
     (set-keyboard-shortcuts body transport-toggle)
     ))
 
-(clog:set-on-new-window 'svg-display :path "/svg-display" :boot-file "/start.html")
+(clog:set-on-new-window 'svg-display :path "/svg-display")
 
 ;; Initialize the CLOG system with a boot file which contains the
 ;; static js files. For customized uses copy the "www" subdirectory of
@@ -292,8 +292,21 @@ directory.
 
 :inverse - 0 or 1 indicating inverse colors.
 
+@Example
+
+(events
+ (loop
+   for i below 10
+   collect (new midi :time (* 0.1 i) :keynum (between 60 72) :duration 0.1))
+ (svg-gui-path \"test.svg\"))
+
+(svg->browser \"test.svg\")
+
+;; Then open a browser at http://127.0.0.1:54619/svg-display
+
 @See-also
 clamps:cm-svg.rts
+svg-gui-path
 "
   (set-val cm.svgd:svg-file svg-file)
   (set-val cm.svgd:piano-roll piano-roll)
@@ -310,9 +323,9 @@ clamps:cm-svg.rts
         (watch (let ((last-pos 0))
                  (lambda () (if (zerop (get-val cm.svgd:transport))
                            (let (cl-refs::*curr-ref*)
-;;;                                        (format t "stopping~%")
+;;;                             (format t "stopping~%")
                              (dolist (hook cm.svgd:*stop-hooks*) (funcall hook))
-                             (rts-hush)
+                             (at (+ (now 0)) #'rts-hush)
                              (unless (zerop (get-val cm.svgd:auto-return))
                                (set-val cm.svgd:shift last-pos)))
                            (alexandria:if-let ((seq (get-val cm.svgd:seq)))

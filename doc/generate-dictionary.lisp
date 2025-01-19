@@ -70,6 +70,16 @@
     (or (null forced)
         (eq (find-package forced) pkg))))
 
+          "(insert \"(load \\\"~/quicklisp/local-projects/clamps/extra/elisp/cm-dict.el\\\")
+  (mapcar
+     (lambda (entry)
+       (let ((symbol (intern (car entry)
+    			 ,*common-music-symbols*)))
+         (if (boundp symbol)
+    	 (push (cadr entry) (symbol-value symbol))
+           (set symbol (cdr entry)))))
+     '(\\n\")"
+
 (defparameter *org-mode-dict-file-header*
   "#+TITLE: Clamps Dictionary
 #+AUTHOR: Orm Finnendahl
@@ -108,17 +118,15 @@
   (defun export-dict-to-clamps (s backend info)
     (let ((filename (buffer-file-name)))
       (with-temp-buffer
-        (insert
-         (format \"(load \\\"%s%s\\\")\\n\" (file-name-directory filename)
-                 \"../extra/elisp/cm-dict.el\"))
-        (insert \"(mapcar
-   (lambda (entry)
-     (let ((symbol (intern (car entry)
-  			 ,*common-music-symbols*)))
-       (if (boundp symbol)
-  	 (push (cadr entry) (symbol-value symbol))
-         (set symbol (cdr entry)))))
-   '(\\n\")
+        (insert \"(load \\\"~~/quicklisp/local-projects/clamps/extra/elisp/cm-dict.el\\\")
+  (mapcar
+     (lambda (entry)
+       (let ((symbol (intern (car entry)
+    			 ,*common-music-symbols*)))
+         (if (boundp symbol)
+    	 (push (cadr entry) (symbol-value symbol))
+           (set symbol (cdr entry)))))
+     '(\\n\")
         (mapcar
          (lambda (entry)
            (insert
@@ -467,6 +475,10 @@ set-tempo
   (defparameter *clamps-extra-symbols*
     (append (mapcar #'first *clamps-extra-doc*)
             '(
+              ats-cuda:load-ats
+              ats-cuda:ats-sound
+              ats-cuda:save-ats
+              ats-cuda:track-ats
               cm:*rts-out*
               cm:*midi-out1*
               cm:*midi-in1*
@@ -478,9 +490,14 @@ set-tempo
               clamps:svg-gui-path clamps:set-tempo
               clamps:set-bpm clamps:start-doc-acceptor
               clamps:clamps-start clamps:gui clamps:meters
+              clamps:evt-time
+              clamps:evt-duration
+              clamps:evt-keynum
+              clamps:evt-amp
 
-              cl-user:*sfz-preset-path*
+              cl-user:*sfz-file-path*
               cl-user:*sfile-path*
+              cl-user:*ats-file-path*
               cm:svg->browser cm:rts-hush incudine:node-free-unprotected
               cm:tempo->svg-timescale
               cm:rts cm::rts? ;; cl-midictl::midi-controller
@@ -567,14 +584,14 @@ set-tempo
     svg-import-export:svg-text
 
     clog-dsp-widgets:amp-node
-    cl-poolplayer:args ats-cuda-display:ats-amod ats-cuda-display:ats-bw
-    ats-cuda-display:ats-crosshairs ats-cuda-display:ats-data
+    cl-poolplayer:args ats-cuda-display:atsd.amod ats-cuda-display:atsd.bw
+    ats-cuda-display:atsd.crosshairs ats-cuda-display:atsd.data
     ats-cuda-display:ats-display ats-cuda-display:ats-display-init
-    ats-cuda-display:ats-fmod ats-cuda-display:ats-idx
-    ats-cuda-display:ats-mousepos ats-cuda-display:ats-play
-    ats-cuda-display:ats-player-node-id ats-cuda-display:ats-res-balance
-    ats-cuda-display:ats-scale ats-cuda-display:ats-shift-x
-    ats-cuda-display:ats-sound ats-cuda-display:ats-width ats-cuda-display:ats-x
+    ats-cuda-display:atsd.fmod ats-cuda-display:atsd.idx
+    ats-cuda-display:atsd.mousepos ats-cuda-display:atsd.play
+    ats-cuda-display:atsd.player-node-id ats-cuda-display:atsd.res-balance
+    ats-cuda-display:atsd.scale ats-cuda-display:atsd.shift-x
+    ats-cuda-display:atsd.sound ats-cuda-display:atsd.width ats-cuda-display:atsd.x
     svg-import-export:attributes clog-dsp-widgets:b-attr clog-dsp-widgets:b-elist
     clog-dsp-widgets:b-map clog-dsp-widgets:b-ref clog-dsp-widgets:b-unregister
     clog-dsp-widgets:b-unwatch cl-midictl:bank-buttons clog-dsp-widgets:binding
@@ -631,7 +648,7 @@ set-tempo
     cl-midictl:nk2-fader-last-cc cl-midictl:nk2-fader-modes
     cl-midictl:nk2-fader-update-fns cl-midictl:nk2-faders cl-midictl:nk2-last-cc
     cl-midictl:note-fns cl-midictl:note-state cl-poolplayer:npreset-play
-    clog-dsp-widgets:num-meters cl-plot:o
+    clog-dsp-widgets:num-meters 
     svg-import-export:opacity clog-dsp-widgets:opt-format-attr
     cl-poolplayer:*outseq13* cl-poolplayer:*outseq8* cl-poolplayer:*outseq9*
     cl-poolplayer:p-song-afterfn cl-poolplayer:p-song-beforefn
@@ -798,6 +815,12 @@ result."
          (mapcar #'reformat-arg
                  (get-arg-entries (trim-white-spaces (trim-list arglist))))))
 
+(defun clampsdoc-transcode-slots (arglist)
+  "Reformat @Slots section of docstring for org-mode file."
+ (format nil "*** Slots~%~{~a~^~%~}~%~%"
+         (mapcar #'reformat-arg
+                 (get-arg-entries (trim-white-spaces (trim-list arglist))))))
+
 (defun clampsdoc-transcode-examples (strings)
   "Reformat @Examples section of docstring for org-mode file."
   (format nil "*** Examples~%    #+BEGIN_SRC lisp
@@ -842,6 +865,7 @@ result."
 (defparameter *docstring-fn-lookup*
   `(("@General" . ,#'clampsdoc-transcode-general)
     ("@Arguments" . ,#'clampsdoc-transcode-arguments)
+    ("@Slots" . ,#'clampsdoc-transcode-slots)
     ("@Example" . ,#'clampsdoc-transcode-example)
     ("@Examples" . ,#'clampsdoc-transcode-examples)
     ("@Example-nosrc" . ,#'clampsdoc-transcode-example-nosrc)

@@ -5,6 +5,7 @@
   (:use #:cl #:closer-mop #:org.tfeb.hax.collecting)
   (:nicknames #:ou)
   (:export 
+   #:PATH-FIND-FILE
    #:SYSTEM-VERSION
    #:N
    #:FILTER
@@ -136,5 +137,5 @@
    #:DEFPARAMETER*
    #:DEFVAR*
    #:CLIP
-   )
-  )
+   #:BOOL
+   ))

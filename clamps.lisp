@@ -29,8 +29,8 @@
   "On-new-window handler."
   (funcall #'clamps-gui body))
 
-(set-on-new-window #'clamps-gui :boot-file "/start.html")
-(set-on-new-window #'clog-dsp-widgets::meters-window :path "/meters" :boot-file "/start.html")
+(set-on-new-window #'clamps-gui)
+(set-on-new-window #'clog-dsp-widgets::meters-window :path "/meters")
 
 (in-package :cl-midictl)
 
@@ -49,7 +49,8 @@
 (defparameter *svg-dir* nil)
 
 (defun ensure-directory (dir)
-  (if (stringp dir) (format nil "~A/" dir) dir))
+  "return pathname of dir, ensuring it ends with a slash."
+  (pathname (format nil "~A/" (if (stringp dir) dir (namestring dir)))))
 
 (defvar *clamps-gui-root* nil)
 
@@ -113,31 +114,23 @@ clamps-gui-root
 "
   (merge-pathnames (format nil "svg/~a" file) (ensure-directory (clamps-gui-root))))
 
-(defun clamps-restart-gui (&key (gui-root "/tmp") (open t) (port 54619))
-  "Reset the root directory of the Gui to /<gui-root>/www/, optionally
+(defun clamps-restart-gui (&key (gui-base "/tmp") (open t) (port 54619))
+  "Reset the root directory of the Gui to /<gui-base>/www//, optionally
 opening the Gui in a browser window. The command will create the
-subdirectories /www/, /snd/ and /ats/ in the /gui-root/ directory, if
-they don't exist.
+subdirectories /www//, /snd//, /ats// and /www/svg// in the
+/<gui-base>/ directory, if they don't exist. /<gui-base>/www/svg// is
+the file path for svg files used in the /svg-display/ page of the Gui.
 
 @Arguments
-:gui-root - String or Pathname where to put the /www/ subfolder for files
+:gui-base - String or Pathname where to put the /www/ subfolder for files
 accessible by the gui (nicknamed /<clamps-gui-root>/ throughout
 this dictionary). Defaults to //tmp/.
 
 :open - is a flag indicating whether to open <<clamps-base-url>> in a
 browser window after starting the gui.
 
-In the given path the following directories
-will be created:
-
-- /<clamps-gui-root>/www//
-- /<clamps-gui-root>/www/svg//
-
-file path for svg files used in the /svg-display/ page of the
-Gui.
-
 Any files which need to be accessible by the Gui have to be put
-into the /<clamps-gui-root>/www// subdirectory with their filenames
+into the /<clamps-gui-base>/www// subdirectory with their filenames
 relative to this directory.
 
 @See-also
@@ -145,7 +138,7 @@ clamps
 clamps-base-url
 clamps-gui-root
 "
-  (let* ((dir (pathname (ensure-directory gui-root)))
+  (let* ((dir (pathname (ensure-directory gui-base)))
          (svg-dir-path (format nil "~Awww/svg/" (namestring dir))))
     (format t "(re)starting gui...~%")
     (setf *clamps-gui-root* (merge-pathnames "www/" dir))
@@ -157,17 +150,17 @@ clamps-gui-root
     (setf ats-cuda:*ats-file-dir* (merge-pathnames "ats/" dir))
     (setf cm.svgd:svg-dir (merge-pathnames "svg/" *clamps-gui-root*))
     (let ((targetpath (namestring (merge-pathnames dir "/www"))))
-      (dolist (dir-or-file '("js" "css" "favicon.ico" "start.html"))
+      (dolist (dir-or-file '("js" "css" "favicon.ico" "boot.html"))
         (let* ((subdirpath (format nil "www/~a" dir-or-file))
                (srcpath (namestring (asdf:system-relative-pathname :clog-dsp-widgets subdirpath))))
           (unless (uiop:probe-file* (merge-pathnames (format nil "~a~a" dir subdirpath)))
             (uiop:run-program (format nil "ln -s ~A ~A" srcpath targetpath))))))
     ;;    (clog:set-on-new-window #'clog::clamps-gui :path "/" :boot-file "/start.html")
     (setf (fdefinition 'clog-dsp-widgets::on-new-window) #'clog::clamps-gui)
-    (clog:set-on-new-window #'clog-dsp-widgets::meters-window :path "/meters" :boot-file "/start.html")
-    (clog:set-on-new-window  #'cm:svg-display :path "/svg-display" :boot-file "/start.html")
-    (clog:set-on-new-window  #'ats-cuda-display:ats-display :path "/ats-display" :boot-file "/start.html")
-    (progn (sleep 0.5) (clog-dsp-widgets:start-gui :gui-root (namestring dir) :port port :open open))))
+    (clog:set-on-new-window #'clog-dsp-widgets::meters-window :path "/meters")
+    (clog:set-on-new-window  #'cm:svg-display :path "/svg-display")
+    (clog:set-on-new-window  #'ats-cuda-display:ats-display :path "/ats-display")
+    (progn (sleep 0.5) (clog-dsp-widgets:start-gui :gui-base (namestring dir) :port port :open open))))
 
 ;;; (uiop:probe-file* (namestring (merge-pathnames (pathname "/tmp/") "/www")))
 
@@ -356,14 +349,14 @@ clamps-base-url
 gui
 "  (clog:open-browser :url (format nil "http://127.0.0.1:~A/meters" clog::*clog-port*)))
 
-(defun clamps-start (&key (gui-root "/tmp") (qsynth nil) (open-gui nil))
+(defun clamps-start (&key (gui-base "/tmp") (qsynth nil) (open-gui nil))
   "Entry function called by <<clamps>> to start the webserver for the
 GUI, call <<rts>> to set up IO and MIDI, start the OSC responder for
 Incudine, optionally start qsynth (Linux only) and open the gui in a
 browser. This function should normally not be called by the user.
 
 @Arguments
-gui-root - The root path of the gui
+gui-base - The base path of the gui. <clamps-gui-root> will be <gui-base>/www/.
 qsynth - Boolean indicating whether to start the qsynth softsynth (Linux only).
 open-gui - Boolean indicating whether to open the gui in a Browser window.
 
@@ -382,9 +375,9 @@ rts
   (format t "~&midi initialized!~%")
   ;; (install-sly-hooks)
   (incudine:setup-io)
-  (ats-cuda-display:ats-display-init)
   (start-doc-acceptor)
-  (clamps-restart-gui :gui-root gui-root :open open-gui)
+  (clamps-restart-gui :gui-base gui-base :open open-gui)
+  (ats-cuda-display:ats-display-init)
   (setf (fdefinition 'rts-hush) #'incudine-rts-hush)
   (reset-logger-stream)
   (clamps-logo))

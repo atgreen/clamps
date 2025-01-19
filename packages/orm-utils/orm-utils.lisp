@@ -16,6 +16,28 @@ system-designator - A designator acceptable to /asdf:find-system/
     (when (and system (slot-boundp system 'asdf:version))
       (asdf:component-version system))))
 
+(defun path-find-file (fname path)
+  "Return the full pathname of the first occurence of fname in path.
+
+@Arguments
+fname - String or Pathname of file.
+path - List of paths to search.
+"
+  (let ((fname (pathname fname)))
+    (if (uiop:file-exists-p fname)
+        (namestring fname)
+        (loop
+          for dir in path
+          for result = (string-trim
+                        '(#\NEWLINE)
+                        (with-output-to-string (str)
+                          #-darwin
+                          (uiop:run-program (format nil "find ~a -name ~a -print -quit" dir fname) :output str)
+                          #+darwin
+                          (uiop:run-program (format nil "find ~a -name ~a -print -quit" dir fname) :output str)))
+          while (string= result "")
+          finally (return (unless (string= result "") (pathname result)))))))
+
 ;;(ql:quickload "cm2")
 
 (proclaim '(optimize (speed 0) (debug 3)))
@@ -1671,7 +1693,7 @@ seqs - One or more sequences where mapping gets applied, similar to map.
   (with-open-file (out outfile
                        :direction :output
                        :if-exists :supersede)
-    (format out "~{~A~%~}" seq)))
+    (format out "~{~S~%~}" seq)))
 
 
 (defun slurp (file)
@@ -2625,7 +2647,7 @@ Common Lisp's displaced array functionality.
 
 @Arguments
 arr - 2-dimensional Array.
-rox-idx - Non Negative Integer denoting the Index of the row to return.
+row-idx - Non Negative Integer denoting the Index of the row to return.
 "
     (make-array (array-dimension arr 1) 
       :displaced-to arr 
@@ -2843,3 +2865,14 @@ defparameter*
                        (t
                         `(defvar ,(first entry) ,(second entry)))))))
 
+(defun bool (pred)
+  "Enforce /t/ or /nil/ on pred.
+
+@Arguments
+pred - Any lisp expression.
+
+@Examples
+(bool 1) ; => t
+(bool nil) ; => nil
+"
+  (if pred t))

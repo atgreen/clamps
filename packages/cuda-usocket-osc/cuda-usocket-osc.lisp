@@ -100,7 +100,7 @@ messages."
 (defun default-udp-binary-socket-handler (socket-data osc-stream)
   (declare (type vector socket-data) (type input-cu-osc-stream osc-stream))
   (let ((receiver (input-cu-osc-stream-receiver osc-stream)))
-    (if (incudine::receiver-status receiver)
+    (if (and receiver (incudine::receiver-status receiver))
         (handler-case
             (dolist (fn (incudine::receiver-functions receiver))
               (funcall (the function fn) socket-data))
@@ -360,6 +360,7 @@ Example:
         `(incudine:make-responder
           ,stream
           (lambda (,message)
+            (incudine.util:msg :debug "osc-in: ~a" ,message)
             (let* ((x1 (position (char-code #\,) ,message))
                    (x2 (+ (or x1 0) (position 0 (subseq ,message (1+ x1))))))
               (if (and (cuda-usocket-osc::match-address ,message ,address-vector)

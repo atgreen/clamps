@@ -19,19 +19,38 @@
 ;;; **********************************************************************
 
 (defpackage :clamps
-  (:export set-standard-pitch
-           cl-user:clamps
+  (:export cl-user:clamps
+           
+           set-standard-pitch
+           svg-gui-root
+
+           evt-amp
+           evt-duration
+           evt-keynum
+           evt-time
+           
+           ats-cuda:load-ats
+           ats-cuda:save-ats
+           ats-cuda:track-ats
+           ats-cuda:*ats-snd-dir*
            ats-cuda-display:ats->svg
+
            incudine-bufs:find-buffer
+           incudine-bufs:ensure-buffer
+
            cl-sfz:sfz-preset-lsamples
            cl-sfz:sfz-preset-buffers
            cl-sfz:get-sfz-preset
+           
+           orm-utils:bool
            orm-utils:ftom orm-utils:mtof
-
            orm-utils:get-props-list orm-utils:m-exp
-           output-stream cl-midictl:midi-output cl-midictl:get-ref
+           output-stream
+
+           cl-midictl:midi-output cl-midictl:get-ref
+
            orm-utils:delete-props cl-midictl:buchla-scale
-           incudine-bufs:ensure-buffer orm-utils:call/collecting
+           orm-utils:call/collecting
            clog-dsp-widgets:levelmeter cl-midictl:nanoktl2-midi
            of-incudine-dsps:restore-envs orm-utils:m-lin
            cl-midictl:stop-midi-receive orm-utils:let-default
@@ -135,7 +154,7 @@
            orm-utils:memorize-random-state cl-sfz:play-sfz-loop
            of-incudine-dsps:play-buffer-stretch-env-pan-out add-elements
            orm-utils:calcsndbytes cl-sfz:load-sfz-preset common-lisp:open
-           incudine-bufs:path-find-file clog-dsp-widgets:find-dsp ftom
+           orm-utils:path-find-file clog-dsp-widgets:find-dsp ftom
            of-incudine-dsps:sfz->lsample orm-utils:do-repeated cl-midictl:pulse
            orm-utils:n-exp-dev make-osc-receiver svg-gui-path
            orm-utils:mapply clog-dsp-widgets:create-o-toggle
@@ -172,7 +191,7 @@
            orm-utils:mappend clog-dsp-widgets:*bindings* of-incudine-dsps:line*
            orm-utils:get-duplicates clog-dsp-widgets:create-o-bang
            orm-utils:n-exp-zero clog-dsp-widgets:db-slider->amp
-           cl-sfz:sf-table-get-range incudine-bufs:get-sndfile-path
+           cl-sfz:sf-table-get-range
            cl-midictl:add-midi-cc-fn orm-utils:map-indexed
            orm-utils:with-shadowed-variable clog-dsp-widgets:create-o-knob
            clamps-restart-gui cl-refs:watch common-lisp-user:clamps
@@ -275,21 +294,32 @@
            common-lisp:stream common-lisp:input-stream-p
            cuda-usocket-osc:make-osc-receiver cuda-usocket-osc:stream-p
            cuda-usocket-osc:out-stream-open? common-lisp:close
-           ats-cuda-display:ats-idx ats-cuda-display:ats-display
-           ats-cuda-display:ats-mousepos ats-cuda-display:ats->browser
-           ats-cuda-display:ats-scale ats-cuda-display:ats-shift-x
-           ats-cuda-display:ats-fmod ats-cuda-display:ats-sound
-           ats-cuda-display:pos-watch ats-cuda-display:ats-amod
-           ats-cuda-display:ats-bw ats-cuda-display:ats-data
+           ats-cuda-display:atsd.idx ats-cuda-display:ats-display
+           ats-cuda-display:atsd.mousepos ats-cuda-display:ats->browser
+           ats-cuda-display:atsd.scale ats-cuda-display:atsd.shift-x
+           ats-cuda-display:atsd.fmod ats-cuda-display:atsd.sound
+           ats-cuda-display:pos-watch ats-cuda-display:atsd.amod
+           ats-cuda-display:atsd.bw ats-cuda-display:atsd.data
            ats-cuda-display:play-watch ats-cuda-display:data-watch
-           ats-cuda-display:ats-crosshairs ats-cuda-display:ats-play
-           ats-cuda-display:ats-width ats-cuda-display:restore-tables
-           ats-cuda-display:ats-display-init ats-cuda-display:ats-x
-           ats-cuda-display:ats-player-node-id ats-cuda-display:ats-res-balance
+           ats-cuda-display:atsd.crosshairs ats-cuda-display:atsd.play
+           ats-cuda-display:atsd.width ats-cuda-display:restore-tables
+           ats-cuda-display:ats-display-init ats-cuda-display:atsd.x
+           ats-cuda-display:atsd.player-node-id ats-cuda-display:atsd.res-balance
            incudine.fudi:output-stream incudine.fudi:input-stream
            incudine.fudi:output-stream-p incudine.fudi:stream-open?
            incudine.fudi:send incudine.fudi:stream incudine.fudi:input-stream-p
            incudine.fudi:stream-p incudine.fudi:close incudine.fudi:open
+
+
+
+           of-incudine-dsps:meters
+           of-incudine-dsps:input-bus
+           of-incudine-dsps:bus-value
+           of-incudine-dsps:clear-buses
+           of-incudine-dsps:cp-input-buses
+           of-incudine-dsps:cp-output-buses
+           of-incudine-dsps:mix-bus-to-out
+           of-incudine-dsps:bus-to-out
            of-incudine-dsps:create-lsample
            of-incudine-dsps:play-buffer-stretch-env-pan-out
            of-incudine-dsps:play-buffer-stretch-env-pan-out*
@@ -312,10 +342,9 @@
            of-incudine-dsps:abs-path of-incudine-dsps:lsample
            of-incudine-dsps:*env1* of-incudine-dsps:envelope*
            of-incudine-dsps:sfz->lsample of-incudine-dsps:osc~
-           of-incudine-dsps:buffer-record of-incudine-dsps:lsample-keynum
-           incudine-bufs:get-sndfile-path incudine-bufs:add-buffer
+           of-incudine-dsps:buffer-record of-incudine-dsps:lsample-keynum incudine-bufs:add-buffer
            incudine-bufs:remove-all-buffers incudine-bufs:remove-buffer
-           incudine-bufs:path-find-file
+           orm-utils:path-find-file
            incudine-bufs:ensure-buffer incudine-bufs:buffer-id
            incudine-bufs:find-buffer
            orm-utils:copy-instance orm-utils:ftom orm-utils:get-duplicates
@@ -364,8 +393,8 @@
            orm-utils:case-ext orm-utils:m-lin-rd-rev-fn orm-utils:combinations
            orm-utils:array-slice orm-utils:flatten orm-utils:m-lin
            orm-utils:every-nth cl-plot:construct-plot-command cl-plot:plot
-           cl-plot:o cl-plot:*gnuplot-header* cl-plot:*gnuplot-options*
-           cl-plot:plot-2d cl-plot:with-gnuplot-instance
+           cl-plot:*gnuplot-header* cl-plot:*gnuplot-options*
+           cl-plot:with-gnuplot-instance
            cl-plot:*gnuplot-program* cl-plot:plot cl-refs:ref-object-super
            cl-refs:clear-dependencies cl-refs:*refs-seen* cl-refs:bang-object
            cl-refs:ref-object cl-refs:trigger cl-refs:%trigger cl-refs:make-ref

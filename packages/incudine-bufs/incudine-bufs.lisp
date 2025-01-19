@@ -39,28 +39,6 @@
             (warn "couldn't find file ~S in path" fname)))))
 |#
 
-(defun path-find-file (fname path)
-  "Return the full pathname of the first occurence of fname in path.
-
-@Arguments
-fname - String or Pathname of file.
-path - List of paths to search.
-"
-  (let ((fname (pathname fname)))
-    (if (uiop:file-exists-p fname)
-        (namestring fname)
-        (loop
-          for dir in path
-          for result = (string-trim
-                        '(#\NEWLINE)
-                        (with-output-to-string (str)
-                          #-darwin
-                          (uiop:run-program (format nil "find ~a -name ~a -print -quit" dir fname) :output str)
-                          #+darwin
-                          (uiop:run-program (format nil "find ~a -name ~a -print -exit" dir fname) :output str)))
-          while (string= result "")
-          finally (return (unless (string= result "") (pathname result)))))))
-
 #|
 (defun path-find-file (fname path)
   (let ((fname (pathname fname)))
@@ -250,7 +228,8 @@ remove-all-buffers
 
 (defun clamps-buffer-load (file &key (path cl-user:*sfile-path*))
   "Load and register buffer from /file/ if not loaded already. Return
-buffer.
+buffer. /file/ will be searched recursively in all directories of
+<<*sfile-path*>>.
 
 @Arguments
 file - Pathname or String denoting a soundfile.

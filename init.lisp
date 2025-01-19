@@ -20,7 +20,7 @@
 
 (in-package :cl-user)
 
-(defparameter *sfz-preset-path* (list (pathname "~/work/snd/sfz/"))
+(defparameter *sfz-file-path* (list (asdf:system-relative-pathname :clamps "extra/snd/sfz/"))
   "List of directories to search recursively for /.sfz/ files.
 
 @See-also
@@ -28,7 +28,7 @@ add-sfz-preset
 load-sfz-preset
 ")
 
-(defparameter *sfile-path* (list (pathname "~/work/snd/"))
+(defparameter *sfile-path* (list (asdf:system-relative-pathname :ats-cuda "snd/"))
   "List of directories to search recursively for soundfiles.
 
 @See-also
@@ -36,12 +36,27 @@ clamps-buffer-load
 create-lsample
 ")
 
+(defparameter *ats-file-path* (list (asdf:system-relative-pathname :ats-cuda "ats-data/"))
+  "List of directories to search recursively for ats files.
+
+@See-also
+load-ats
+")
+
 (defparameter *sfz-preset-lookup* (make-hash-table))
 
-(defun set-clamps-doc-root (url)
-  (slynk:eval-in-emacs `(setq *common-music-doc-root* ,url)))
+;; Declaration for the init process only so that it is available in
+;; ~/.clampsinit.lisp. In cl-sfz, #'add-sfz-preset is defined
+;; seperately including documentation.
 
 (defvar *clamps-doc-root* (concatenate 'string "file://" (namestring (merge-pathnames (asdf:system-relative-pathname :clamps "doc/html/clamps-doc/")))))
+
+(defun add-sfz-preset (key fname)
+  (setf (gethash key *sfz-preset-lookup*) fname))
+
+(defun set-clamps-doc-root (url)
+  (setf *clamps-doc-root* url)
+  (slynk:eval-in-emacs `(setq *common-music-doc-root* ,url)))
 
 (load (merge-pathnames ".clampsinit.lisp" (user-homedir-pathname))
       :if-does-not-exist nil)
@@ -49,7 +64,7 @@ create-lsample
 (defun clamps-image-start ()
   (setf *package* (find-package :cl-user)))
 
-(defun clamps (&key (gui-root "/tmp") (qsynth nil) (open-gui nil))
+(defun clamps (&key (gui-base "/tmp") (qsynth nil) (open-gui nil))
   "Start Clamps including the Gui. This function can be called from the
 /:cl-user/ package.
 
@@ -60,20 +75,23 @@ Apart from starting the webserver for the Gui, the function also:
 - Creates groups and buses for incudine dsps (see the Chapter <<clamps:General Incudine Setup>>.
 - Starts the documentation acceptor for the online doc at /http://localhost:8282/overview/index.html/.
 
-The following directories will be created in the gui-root path :
+The following directories will be created in the /gui-base/ path if
+they don't exist:
 
-- /<clamps-gui-root>/www//
-- /<clamps-gui-root>/www/svg/
+- /<gui-base>/ats//
+- /<gui-base>/snd//
+- /<gui-base>/www//
+- /<gui-base>/www/svg//
 
 The latter is the file path for svg files used in the
 /<clamps-base-url>/svg-display/ page of the Gui.
 
-Any files which need to be accessible by the Gui have to be put
-into the /<clamps-gui-root>/www// subdirectory with their filenames
-relative to this directory.
+Any files which need to be accessible by the Gui have to be put into
+the /<gui-base>/www// subdirectory with their filenames relative to
+this directory.
 
 @Arguments
-:gui-root - String or Pathname indicating where to put the /www/ subfolder
+:gui-base - String or Pathname indicating where to put the /www/ subfolder
 for files accessible by the gui (nicknamed /<clamps-gui-root>/).
 
 :open-gui - Boolean indicating whether to open the /<clamps-base-url>/ in a
@@ -112,6 +130,6 @@ rts
                               (cmvar :*cm-readtable*))
                         (symbol-value sym)))))))
     (funcall #'clampscall :clamps-start
-             :gui-root gui-root :qsynth qsynth :open-gui open-gui)))
+             :gui-base gui-base :qsynth qsynth :open-gui open-gui)))
 
-(export '(*sfz-preset-lookup* *sfz-preset-path* *sfile-path* set-clamps-doc-root *clamps-doc-root* clamps clamps-no-gui clamps-image-start) 'cl-user)
+(export '(*sfz-preset-lookup* *sfz-file-path* *sfile-path* *ats-file-path* set-clamps-doc-root *clamps-doc-root* clamps clamps-no-gui clamps-image-start) 'cl-user)
